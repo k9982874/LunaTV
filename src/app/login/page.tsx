@@ -74,23 +74,14 @@ function LoginPageClient() {
   const [username, setUsername] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [shouldAskUsername, setShouldAskUsername] = useState(false);
 
   const { siteName } = useSite();
-
-  // 在客户端挂载后设置配置
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storageType = (window as any).RUNTIME_CONFIG?.STORAGE_TYPE;
-      setShouldAskUsername(storageType && storageType !== 'localstorage');
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
 
-    if (!password || (shouldAskUsername && !username)) return;
+    if (!password || !username) return;
 
     try {
       setLoading(true);
@@ -98,8 +89,8 @@ function LoginPageClient() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          username,
           password,
-          ...(shouldAskUsername ? { username } : {}),
         }),
       });
 
@@ -131,22 +122,20 @@ function LoginPageClient() {
           {siteName}
         </h1>
         <form onSubmit={handleSubmit} className='space-y-8'>
-          {shouldAskUsername && (
-            <div>
-              <label htmlFor='username' className='sr-only'>
-                用户名
-              </label>
-              <input
-                id='username'
-                type='text'
-                autoComplete='username'
-                className='block w-full rounded-lg border-0 py-3 px-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60 backdrop-blur'
-                placeholder='输入用户名'
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
-          )}
+          <div>
+            <label htmlFor='username' className='sr-only'>
+              用户名
+            </label>
+            <input
+              id='username'
+              type='text'
+              autoComplete='username'
+              className='block w-full rounded-lg border-0 py-3 px-4 text-gray-900 dark:text-gray-100 shadow-sm ring-1 ring-white/60 dark:ring-white/20 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:ring-2 focus:ring-green-500 focus:outline-none sm:text-base bg-white/60 dark:bg-zinc-800/60 backdrop-blur'
+              placeholder='输入用户名'
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
 
           <div>
             <label htmlFor='password' className='sr-only'>
@@ -171,7 +160,7 @@ function LoginPageClient() {
           <button
             type='submit'
             disabled={
-              !password || loading || (shouldAskUsername && !username)
+              !username || !password || loading
             }
             className='inline-flex w-full justify-center rounded-lg bg-green-600 py-3 text-base font-semibold text-white shadow-lg transition-all duration-200 hover:from-green-600 hover:to-blue-600 disabled:cursor-not-allowed disabled:opacity-50'
           >

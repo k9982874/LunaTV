@@ -1,6 +1,5 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 
-import * as crypto from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getConfig, refineConfig } from '@/lib/config';
@@ -109,10 +108,8 @@ async function refreshConfig() {
 
 async function refreshRecordAndFavorites() {
   try {
-    const users = await db.getAllUsers();
-    if (process.env.USERNAME && !users.includes(process.env.USERNAME)) {
-      users.push(process.env.USERNAME);
-    }
+    const allUsers = await db.getAllUsers();
+
     // 函数级缓存：key 为 `${source}+${id}`，值为 Promise<VideoDetail | null>
     const detailCache = new Map<string, Promise<SearchResult | null>>();
 
@@ -144,12 +141,12 @@ async function refreshRecordAndFavorites() {
       return promise;
     };
 
-    for (const user of users) {
-      console.log(`开始处理用户: ${user}`);
+    for (const user of allUsers) {
+      console.log(`开始处理用户: ${user.username}`);
 
       // 播放记录
       try {
-        const playRecords = await db.getAllPlayRecords(user);
+        const playRecords = await db.getAllPlayRecords(user.username);
         const totalRecords = Object.keys(playRecords).length;
         let processedRecords = 0;
 
@@ -169,7 +166,7 @@ async function refreshRecordAndFavorites() {
 
             const episodeCount = detail.episodes?.length || 0;
             if (episodeCount > 0 && episodeCount !== record.total_episodes) {
-              await db.savePlayRecord(user, source, id, {
+              await db.savePlayRecord(user.username, source, id, {
                 title: detail.title || record.title,
                 source_name: record.source_name,
                 cover: detail.poster || record.cover,
@@ -200,7 +197,7 @@ async function refreshRecordAndFavorites() {
 
       // 收藏
       try {
-        let favorites = await db.getAllFavorites(user);
+        let favorites = await db.getAllFavorites(user.username);
         favorites = Object.fromEntries(
           Object.entries(favorites).filter(([_, fav]) => fav.origin !== 'live')
         );
@@ -223,7 +220,7 @@ async function refreshRecordAndFavorites() {
 
             const favEpisodeCount = favDetail.episodes?.length || 0;
             if (favEpisodeCount > 0 && favEpisodeCount !== fav.total_episodes) {
-              await db.saveFavorite(user, source, id, {
+              await db.saveFavorite(user.username, source, id, {
                 title: favDetail.title || fav.title,
                 source_name: fav.source_name,
                 cover: favDetail.poster || fav.cover,

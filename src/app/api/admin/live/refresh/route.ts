@@ -13,16 +13,20 @@ export async function POST(request: NextRequest) {
   try {
     // 权限检查
     const authInfo = getAuthInfoFromCookie(request);
-    const username = authInfo?.username;
-    const config = await getConfig();
-    if (username !== process.env.USERNAME) {
-      // 管理员
-      const user = config.UserConfig.Users.find(
-        (u) => u.username === username
+    if (!authInfo || !authInfo.username) {
+      return NextResponse.json({ error: '未登录' }, { status: 401 });
+    }
+
+    if (authInfo.role !== 'owner' && authInfo.role !== 'admin') {
+      return NextResponse.json(
+        { error: '权限不足，无法执行此操作' },
+        { status: 401 }
       );
-      if (!user || user.role !== 'admin' || user.banned) {
-        return NextResponse.json({ error: '权限不足' }, { status: 401 });
-      }
+    }
+
+    const config = await getConfig();
+    if (!config) {
+      return NextResponse.json({ error: '配置不存在' }, { status: 404 });
     }
 
     // 并发刷新所有启用的直播源

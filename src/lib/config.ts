@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db';
 
+import { User } from '@/lib/types';
 import { AdminConfig } from './admin.types';
 
 export interface ApiSite {
@@ -182,7 +183,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
   return adminConfig;
 }
 
-async function getInitConfig(configFile: string, subConfig: {
+async function getInitConfig(configFile: string | null, subConfig: {
   URL: string;
   AutoUpdate: boolean;
   LastCheck: string;
@@ -191,17 +192,20 @@ async function getInitConfig(configFile: string, subConfig: {
     AutoUpdate: false,
     LastCheck: "",
   }): Promise<AdminConfig> {
-  let cfgFile: ConfigFileStruct;
+  let cfgFile = {} as ConfigFileStruct;
   try {
-    cfgFile = JSON.parse(configFile) as ConfigFileStruct;
+    if (configFile) {
+      cfgFile = JSON.parse(configFile) as ConfigFileStruct;
+    }
   } catch (e) {
-    cfgFile = {} as ConfigFileStruct;
+    console.warn('解析配置文件失败:', e);
   }
+
   const adminConfig: AdminConfig = {
-    ConfigFile: configFile,
+    ConfigFile: configFile || "",
     ConfigSubscribtion: subConfig,
     SiteConfig: {
-      SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTV',
+      SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'LunaTV',
       Announcement:
         process.env.ANNOUNCEMENT ||
         '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。',
@@ -227,24 +231,20 @@ async function getInitConfig(configFile: string, subConfig: {
     LiveConfig: [],
   };
 
-  // 补充用户信息
-  let userNames: string[] = [];
+  // 用户信息
+  let allUsers: User[] = [];
   try {
-    userNames = await db.getAllUsers();
+    allUsers = await db.getAllUsers();
   } catch (e) {
     console.error('获取用户列表失败:', e);
   }
-  const allUsers = userNames.filter((u) => u !== process.env.USERNAME).map((u) => ({
-    username: u,
-    role: 'user',
-    banned: false,
+  adminConfig.UserConfig.Users = allUsers.map((user) => ({
+    username: user.username,
+    role: user.role,
+    banned: user.banned,
+    enabledApis: [],
+    tags: [],
   }));
-  allUsers.unshift({
-    username: process.env.USERNAME!,
-    role: 'owner',
-    banned: false,
-  });
-  adminConfig.UserConfig.Users = allUsers as any;
 
   // 从配置文件中补充源信息
   Object.entries(cfgFile.api_site || []).forEach(([key, site]) => {
@@ -305,7 +305,7 @@ export async function getConfig(): Promise<AdminConfig> {
 
   // db 中无配置，执行一次初始化
   if (!adminConfig) {
-    adminConfig = await getInitConfig("");
+    adminConfig = await getInitConfig(null);
   }
   adminConfig = configSelfCheck(adminConfig);
   cachedConfig = adminConfig;
@@ -331,9 +331,6 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
     adminConfig.LiveConfig = [];
   }
 
-  // 站长变更自检
-  const ownerUser = process.env.USERNAME;
-
   // 去重
   const seenUsernames = new Set<string>();
   adminConfig.UserConfig.Users = adminConfig.UserConfig.Users.filter((user) => {
@@ -342,23 +339,6 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
     }
     seenUsernames.add(user.username);
     return true;
-  });
-  // 过滤站长
-  const originOwnerCfg = adminConfig.UserConfig.Users.find((u) => u.username === ownerUser);
-  adminConfig.UserConfig.Users = adminConfig.UserConfig.Users.filter((user) => user.username !== ownerUser);
-  // 其他用户不得拥有 owner 权限
-  adminConfig.UserConfig.Users.forEach((user) => {
-    if (user.role === 'owner') {
-      user.role = 'user';
-    }
-  });
-  // 重新添加回站长
-  adminConfig.UserConfig.Users.unshift({
-    username: ownerUser!,
-    role: 'owner',
-    banned: false,
-    enabledApis: originOwnerCfg?.enabledApis || undefined,
-    tags: originOwnerCfg?.tags || undefined,
   });
 
   // 采集源去重

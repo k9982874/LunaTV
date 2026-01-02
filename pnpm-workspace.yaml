@@ -1,0 +1,6 @@
+ignoredBuiltDependencies:
+  - javascript-obfuscator
+  - unrs-resolver
+
+onlyBuiltDependencies:
+  - better-sqlite3

@@ -16,12 +16,9 @@ export const dynamic = 'force-dynamic';
 
 // 动态生成 metadata，支持配置更新后的标题变化
 export async function generateMetadata(): Promise<Metadata> {
-  const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
   const config = await getConfig();
-  let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTV';
-  if (storageType !== 'localstorage') {
-    siteName = config.SiteConfig.SiteName;
-  }
+  const siteName =
+    config.SiteConfig.SiteName || process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTV';
 
   return {
     title: siteName,
@@ -39,14 +36,13 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
-
   let siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'MoonTV';
   let announcement =
     process.env.ANNOUNCEMENT ||
     '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。';
 
-  let doubanProxyType = process.env.NEXT_PUBLIC_DOUBAN_PROXY_TYPE || 'cmliussss-cdn-tencent';
+  let doubanProxyType =
+    process.env.NEXT_PUBLIC_DOUBAN_PROXY_TYPE || 'cmliussss-cdn-tencent';
   let doubanProxy = process.env.NEXT_PUBLIC_DOUBAN_PROXY || '';
   let doubanImageProxyType =
     process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE || 'cmliussss-cdn-tencent';
@@ -59,29 +55,28 @@ export default async function RootLayout({
     type: 'movie' | 'tv';
     query: string;
   }[];
-  if (storageType !== 'localstorage') {
-    const config = await getConfig();
-    siteName = config.SiteConfig.SiteName;
-    announcement = config.SiteConfig.Announcement;
 
-    doubanProxyType = config.SiteConfig.DoubanProxyType;
-    doubanProxy = config.SiteConfig.DoubanProxy;
-    doubanImageProxyType = config.SiteConfig.DoubanImageProxyType;
-    doubanImageProxy = config.SiteConfig.DoubanImageProxy;
-    disableYellowFilter = config.SiteConfig.DisableYellowFilter;
-    customCategories = config.CustomCategories.filter(
-      (category) => !category.disabled
-    ).map((category) => ({
-      name: category.name || '',
-      type: category.type,
-      query: category.query,
-    }));
-    fluidSearch = config.SiteConfig.FluidSearch;
-  }
+  const config = await getConfig();
+  siteName = config.SiteConfig.SiteName;
+  announcement = config.SiteConfig.Announcement;
+
+  doubanProxyType = config.SiteConfig.DoubanProxyType;
+  doubanProxy = config.SiteConfig.DoubanProxy;
+  doubanImageProxyType = config.SiteConfig.DoubanImageProxyType;
+  doubanImageProxy = config.SiteConfig.DoubanImageProxy;
+  disableYellowFilter = config.SiteConfig.DisableYellowFilter;
+  customCategories = config.CustomCategories.filter(
+    (category) => !category.disabled
+  ).map((category) => ({
+    name: category.name || '',
+    type: category.type,
+    query: category.query,
+  }));
+  fluidSearch = config.SiteConfig.FluidSearch;
 
   // 将运行时配置注入到全局 window 对象，供客户端在运行时读取
   const runtimeConfig = {
-    STORAGE_TYPE: process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage',
+    STORAGE_TYPE: process.env.NEXT_PUBLIC_STORAGE_TYPE || 'sqlite',
     DOUBAN_PROXY_TYPE: doubanProxyType,
     DOUBAN_PROXY: doubanProxy,
     DOUBAN_IMAGE_PROXY_TYPE: doubanImageProxyType,

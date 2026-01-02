@@ -11,10 +11,10 @@ export async function POST(request: NextRequest) {
     // 权限检查：仅站长可以拉取配置订阅
     const authInfo = getAuthInfoFromCookie(request);
     if (!authInfo || !authInfo.username) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
 
-    if (authInfo.username !== process.env.USERNAME) {
+    if (authInfo.role !== 'owner') {
       return NextResponse.json(
         { error: '权限不足，只有站长可以拉取配置订阅' },
         { status: 401 }

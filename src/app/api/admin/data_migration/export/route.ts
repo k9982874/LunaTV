@@ -15,15 +15,6 @@ const gzipAsync = promisify(gzip);
 
 export async function POST(req: NextRequest) {
   try {
-    // 检查存储类型
-    const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
-    if (storageType === 'localstorage') {
-      return NextResponse.json(
-        { error: '不支持本地存储进行数据迁移' },
-        { status: 400 }
-      );
-    }
-
     // 验证身份和权限
     const authInfo = getAuthInfoFromCookie(req);
     if (!authInfo || !authInfo.username) {
@@ -31,8 +22,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 检查用户权限（只有站长可以导出数据）
-    if (authInfo.username !== process.env.USERNAME) {
-      return NextResponse.json({ error: '权限不足，只有站长可以导出数据' }, { status: 401 });
+    if (authInfo.role !== 'owner') {
+      return NextResponse.json(
+        { error: '权限不足，只有站长可以导出数据' },
+        { status: 401 },
+      );
     }
 
     const config = await db.getAdminConfig();
@@ -59,31 +53,25 @@ export async function POST(req: NextRequest) {
     };
 
     // 获取所有用户
-    let allUsers = await db.getAllUsers();
-    // 添加站长用户
-    allUsers.push(process.env.USERNAME);
-    allUsers = Array.from(new Set(allUsers));
+    const allUsers = await db.getAllUsers(true);
 
     // 为每个用户收集数据
-    for (const username of allUsers) {
+    for (const user of allUsers) {
       const userData = {
         // 播放记录
-        playRecords: await db.getAllPlayRecords(username),
+        playRecords: await db.getAllPlayRecords(user.username),
         // 收藏夹
-        favorites: await db.getAllFavorites(username),
+        favorites: await db.getAllFavorites(user.username),
         // 搜索历史
-        searchHistory: await db.getSearchHistory(username),
+        searchHistory: await db.getSearchHistory(user.username),
         // 跳过片头片尾配置
-        skipConfigs: await db.getAllSkipConfigs(username),
+        skipConfigs: await db.getAllSkipConfigs(user.username),
         // 用户密码（通过验证空密码来检查用户是否存在，然后获取密码）
-        password: await getUserPassword(username)
+        password: user.password,
       };
 
-      exportData.data.userData[username] = userData;
+      exportData.data.userData[user.username] = userData;
     }
-
-    // 覆盖站长密码
-    exportData.data.userData[process.env.USERNAME].password = process.env.PASSWORD;
 
     // 将数据转换为JSON字符串
     const jsonData = JSON.stringify(exportData);
@@ -115,22 +103,5 @@ export async function POST(req: NextRequest) {
       { error: error instanceof Error ? error.message : '导出失败' },
       { status: 500 }
     );
-  }
-}
-
-// 辅助函数：获取用户密码（通过数据库直接访问）
-async function getUserPassword(username: string): Promise<string | null> {
-  try {
-    // 使用 Redis 存储的直接访问方法
-    const storage = (db as any).storage;
-    if (storage && typeof storage.client?.get === 'function') {
-      const passwordKey = `u:${username}:pwd`;
-      const password = await storage.client.get(passwordKey);
-      return password;
-    }
-    return null;
-  } catch (error) {
-    console.error(`获取用户 ${username} 密码失败:`, error);
-    return null;
   }
 }

@@ -9,24 +9,21 @@ import { db } from '@/lib/db';
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
-  const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
-  if (storageType === 'localstorage') {
-    return NextResponse.json(
-      {
-        error: '不支持本地存储进行管理员配置',
-      },
-      { status: 400 }
-    );
-  }
-
   try {
     const body = await request.json();
 
     const authInfo = getAuthInfoFromCookie(request);
     if (!authInfo || !authInfo.username) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
-    const username = authInfo.username;
+
+    // 权限校验
+    if (authInfo.role !== 'owner' && authInfo.role !== 'admin') {
+      return NextResponse.json(
+        { error: '权限不足，无法执行此操作' },
+        { status: 401 }
+      );
+    }
 
     const {
       SiteName,
@@ -69,17 +66,6 @@ export async function POST(request: NextRequest) {
     }
 
     const adminConfig = await getConfig();
-
-    // 权限校验
-    if (username !== process.env.USERNAME) {
-      // 管理员
-      const user = adminConfig.UserConfig.Users.find(
-        (u) => u.username === username
-      );
-      if (!user || user.role !== 'admin' || user.banned) {
-        return NextResponse.json({ error: '权限不足' }, { status: 401 });
-      }
-    }
 
     // 更新缓存中的站点设置
     adminConfig.SiteConfig = {

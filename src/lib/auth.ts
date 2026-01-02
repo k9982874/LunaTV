@@ -2,13 +2,12 @@ import { NextRequest } from 'next/server';
 
 // 从cookie获取认证信息 (服务端使用)
 export function getAuthInfoFromCookie(request: NextRequest): {
-  password?: string;
   username?: string;
+  role?: 'owner' | 'admin' | 'user';
   signature?: string;
   timestamp?: number;
 } | null {
   const authCookie = request.cookies.get('auth');
-
   if (!authCookie) {
     return null;
   }
@@ -24,7 +23,6 @@ export function getAuthInfoFromCookie(request: NextRequest): {
 
 // 从cookie获取认证信息 (客户端使用)
 export function getAuthInfoFromBrowserCookie(): {
-  password?: string;
   username?: string;
   signature?: string;
   timestamp?: number;

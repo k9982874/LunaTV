@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthInfoFromCookie } from '@/lib/auth';
 import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
 import { searchFromApi } from '@/lib/downstream';
+import redis from '@/lib/redis';
 import { yellowWords } from '@/lib/yellow';
 
 export const runtime = 'nodejs';
@@ -12,7 +13,7 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
   if (!authInfo || !authInfo.username) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
@@ -67,6 +68,31 @@ export async function GET(request: NextRequest) {
       // no cache if empty
       return NextResponse.json({ results: [] }, { status: 200 });
     }
+
+    const tasks = [];
+    for (const result of flattenedResults) {
+      const data = result.episodes.reduce(
+        (acc: Record<string, string>, cur: string, index: number): Record<string, string> => {
+          const name = result.episodes_titles[index];
+          acc[name] = cur;
+
+          result.episodes[index] =
+            `${process.env.SITE_BASE}/api/play?source=${result.source}&id=${result.id}&name=${name}`;
+
+          return acc;
+        },
+        {} as Record<string, string>,
+      ) as Record<string, string>;
+
+      const key = `${result.source}-${result.id}`;
+      tasks.push(redis.hmset(key, data, (_, result) => {
+        if (result === 'OK') {
+          redis.expire(key, 8 * 60 * 60); // 8小时过期
+        }
+      }));
+    }
+
+    await Promise.all(tasks);
 
     return NextResponse.json(
       { results: flattenedResults },

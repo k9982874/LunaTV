@@ -24,23 +24,21 @@ const ACTIONS = [
 ] as const;
 
 export async function POST(request: NextRequest) {
-  const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
-  if (storageType === 'localstorage') {
-    return NextResponse.json(
-      {
-        error: '不支持本地存储进行管理员配置',
-      },
-      { status: 400 }
-    );
-  }
-
   try {
     const body = await request.json();
 
     const authInfo = getAuthInfoFromCookie(request);
     if (!authInfo || !authInfo.username) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
+
+    if (authInfo.role !== 'owner' && authInfo.role !== 'admin') {
+      return NextResponse.json(
+        { error: '权限不足，无法执行此操作' },
+        { status: 401 }
+      );
+    }
+
     const username = authInfo.username;
 
     const {
@@ -81,18 +79,7 @@ export async function POST(request: NextRequest) {
     const adminConfig = await getConfig();
 
     // 判定操作者角色
-    let operatorRole: 'owner' | 'admin';
-    if (username === process.env.USERNAME) {
-      operatorRole = 'owner';
-    } else {
-      const userEntry = adminConfig.UserConfig.Users.find(
-        (u) => u.username === username
-      );
-      if (!userEntry || userEntry.role !== 'admin' || userEntry.banned) {
-        return NextResponse.json({ error: '权限不足' }, { status: 401 });
-      }
-      operatorRole = 'admin';
-    }
+    const operatorRole = authInfo.role;
 
     // 查找目标用户条目（用户组操作和批量操作不需要）
     let targetEntry: any = null;
@@ -156,14 +143,12 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           );
         }
-        if (isTargetAdmin) {
-          // 目标是管理员
-          if (operatorRole !== 'owner') {
-            return NextResponse.json(
-              { error: '仅站长可封禁管理员' },
-              { status: 401 }
-            );
-          }
+        // 目标是管理员
+        if (isTargetAdmin && operatorRole !== 'owner') {
+          return NextResponse.json(
+            { error: '权限不足，只有站长可以执行此操作' },
+            { status: 401 }
+          );
         }
         targetEntry.banned = true;
         break;
@@ -175,13 +160,12 @@ export async function POST(request: NextRequest) {
             { status: 404 }
           );
         }
-        if (isTargetAdmin) {
-          if (operatorRole !== 'owner') {
-            return NextResponse.json(
-              { error: '仅站长可操作管理员' },
-              { status: 401 }
-            );
-          }
+        // 目标是管理员
+        if (isTargetAdmin && operatorRole !== 'owner') {
+          return NextResponse.json(
+            { error: '权限不足，只有站长可以执行此操作' },
+            { status: 401 }
+          );
         }
         targetEntry.banned = false;
         break;
@@ -201,7 +185,7 @@ export async function POST(request: NextRequest) {
         }
         if (operatorRole !== 'owner') {
           return NextResponse.json(
-            { error: '仅站长可设置管理员' },
+            { error: '权限不足，只有站长可以执行此操作' },
             { status: 401 }
           );
         }
@@ -223,7 +207,7 @@ export async function POST(request: NextRequest) {
         }
         if (operatorRole !== 'owner') {
           return NextResponse.json(
-            { error: '仅站长可取消管理员' },
+            { error: '权限不足，只有站长可以执行此操作' },
             { status: 401 }
           );
         }
@@ -255,7 +239,7 @@ export async function POST(request: NextRequest) {
           username !== targetUsername
         ) {
           return NextResponse.json(
-            { error: '仅站长可修改其他管理员密码' },
+            { error: '权限不足，只有站长可以执行此操作' },
             { status: 401 }
           );
         }
@@ -279,9 +263,10 @@ export async function POST(request: NextRequest) {
           );
         }
 
+        // 目标是管理员
         if (isTargetAdmin && operatorRole !== 'owner') {
           return NextResponse.json(
-            { error: '仅站长可删除管理员' },
+            { error: '权限不足，只有站长可以执行此操作' },
             { status: 401 }
           );
         }
@@ -315,7 +300,7 @@ export async function POST(request: NextRequest) {
           username !== targetUsername
         ) {
           return NextResponse.json(
-            { error: '仅站长可配置其他管理员的采集源' },
+            { error: '权限不足，只有站长可以执行此操作' },
             { status: 401 }
           );
         }
@@ -408,7 +393,10 @@ export async function POST(request: NextRequest) {
           operatorRole !== 'owner' &&
           username !== targetUsername
         ) {
-          return NextResponse.json({ error: '仅站长可配置其他管理员的用户组' }, { status: 400 });
+          return NextResponse.json(
+            { error: '权限不足，只有站长可以执行此操作' },
+            { status: 401 }
+          );
         }
 
         // 更新用户的用户组

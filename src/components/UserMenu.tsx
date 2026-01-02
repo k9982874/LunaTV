@@ -35,7 +35,7 @@ export const UserMenu: React.FC = () => {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
   const [isVersionPanelOpen, setIsVersionPanelOpen] = useState(false);
   const [authInfo, setAuthInfo] = useState<AuthInfo | null>(null);
-  const [storageType, setStorageType] = useState<string>('localstorage');
+  const [storageType, setStorageType] = useState<string>('sqlite');
   const [mounted, setMounted] = useState(false);
 
   // Body 滚动锁定 - 使用 overflow 方式避免布局问题
@@ -455,8 +455,7 @@ export const UserMenu: React.FC = () => {
     authInfo?.role === 'owner' || authInfo?.role === 'admin';
 
   // 检查是否显示修改密码按钮
-  const showChangePassword =
-    authInfo?.role !== 'owner' && storageType !== 'localstorage';
+  const showChangePassword = authInfo?.role !== 'owner';
 
   // 角色中文映射
   const getRoleText = (role?: string) => {
@@ -507,7 +506,7 @@ export const UserMenu: React.FC = () => {
               </div>
               <div className='text-[10px] text-gray-400 dark:text-gray-500'>
                 数据存储：
-                {storageType === 'localstorage' ? '本地' : storageType}
+                {storageType}
               </div>
             </div>
           </div>

@@ -15,15 +15,6 @@ const gunzipAsync = promisify(gunzip);
 
 export async function POST(req: NextRequest) {
   try {
-    // 检查存储类型
-    const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
-    if (storageType === 'localstorage') {
-      return NextResponse.json(
-        { error: '不支持本地存储进行数据迁移' },
-        { status: 400 }
-      );
-    }
-
     // 验证身份和权限
     const authInfo = getAuthInfoFromCookie(req);
     if (!authInfo || !authInfo.username) {
@@ -31,8 +22,11 @@ export async function POST(req: NextRequest) {
     }
 
     // 检查用户权限（只有站长可以导入数据）
-    if (authInfo.username !== process.env.USERNAME) {
-      return NextResponse.json({ error: '权限不足，只有站长可以导入数据' }, { status: 401 });
+    if (authInfo.role !== 'owner') {
+      return NextResponse.json(
+        { error: '权限不足，只有站长可以导入数据' },
+        { status: 401 },
+      );
     }
 
     // 解析表单数据

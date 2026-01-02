@@ -1,5 +1,51 @@
 import { AdminConfig } from './admin.types';
 
+// 用户数据结构
+export interface User {
+  username: string;
+  role: 'user' | 'admin' | 'owner';
+  banned?: boolean;
+  enabledApis?: string[]; // 优先级高于tags限制
+  tags?: string[]; // 多 tags 取并集限制
+}
+
+// 用户组数据结构
+export interface UserGroup {
+  name: string;
+  enabledApis: string[];
+}
+
+// API 源数据结构
+export interface ApiSource {
+  key: string;
+  name: string;
+  api: string;
+  detail?: string;
+  from: 'config' | 'custom';
+  disabled?: boolean;
+}
+
+// 直播源数据结构
+export interface LiveSource {
+  key: string;
+  name: string;
+  url: string;  // m3u 地址
+  ua?: string;
+  epg?: string; // 节目单
+  from: 'config' | 'custom';
+  channelNumber?: number;
+  disabled?: boolean;
+}
+
+// 分类数据结构
+export interface Category {
+  name?: string;
+  type: 'movie' | 'tv';
+  query: string;
+  from: 'config' | 'custom';
+  disabled?: boolean;
+}
+
 // 播放记录数据结构
 export interface PlayRecord {
   title: string;
@@ -60,7 +106,7 @@ export interface IStorage {
   deleteSearchHistory(userName: string, keyword?: string): Promise<void>;
 
   // 用户列表
-  getAllUsers(): Promise<string[]>;
+  getAllUsers(withPassword?: boolean): Promise<(User & { password?: string })[]>;
 
   // 管理员配置相关
   getAdminConfig(): Promise<AdminConfig | null>;

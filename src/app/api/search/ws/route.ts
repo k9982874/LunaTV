@@ -12,7 +12,7 @@ export const runtime = 'nodejs';
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
   if (!authInfo || !authInfo.username) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json({ error: '未登录' }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);

@@ -1,30 +1,20 @@
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 
 import { AdminConfig } from './admin.types';
-import { KvrocksStorage } from './kvrocks.db';
-import { RedisStorage } from './redis.db';
-import { Favorite, IStorage, PlayRecord, SkipConfig } from './types';
-import { UpstashRedisStorage } from './upstash.db';
+import { SqliteStorage } from './db/sqlite.db';
+import { Favorite, IStorage, PlayRecord, SkipConfig, User } from './types';
 
-// storage type 常量: 'localstorage' | 'redis' | 'upstash'，默认 'localstorage'
+// storage type 常量: 'localstorage' | 'redis' | 'upstash' | 'kvrocks' | 'sqlite'，默认 'localstorage'
 const STORAGE_TYPE =
   (process.env.NEXT_PUBLIC_STORAGE_TYPE as
-    | 'localstorage'
-    | 'redis'
-    | 'upstash'
-    | 'kvrocks'
-    | undefined) || 'localstorage';
+    | 'sqlite'
+    | undefined) || 'sqlite';
 
 // 创建存储实例
 function createStorage(): IStorage {
   switch (STORAGE_TYPE) {
-    case 'redis':
-      return new RedisStorage();
-    case 'upstash':
-      return new UpstashRedisStorage();
-    case 'kvrocks':
-      return new KvrocksStorage();
-    case 'localstorage':
+    case 'sqlite':
+      return new SqliteStorage();
     default:
       return null as unknown as IStorage;
   }
@@ -70,6 +60,7 @@ export class DbManager {
     record: PlayRecord
   ): Promise<void> {
     const key = generateStorageKey(source, id);
+    console.error('savePlayRecord', userName, id);
     await this.storage.setPlayRecord(userName, key, record);
   }
 
@@ -168,9 +159,9 @@ export class DbManager {
   }
 
   // 获取全部用户名
-  async getAllUsers(): Promise<string[]> {
+  async getAllUsers(withPassword?: boolean): Promise<(User & { password?: string })[]> {
     if (typeof (this.storage as any).getAllUsers === 'function') {
-      return (this.storage as any).getAllUsers();
+      return (this.storage as any).getAllUsers(withPassword);
     }
     return [];
   }

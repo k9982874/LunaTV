@@ -12,9 +12,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const storageType = process.env.NEXT_PUBLIC_STORAGE_TYPE || 'localstorage';
-
-  if (!process.env.PASSWORD) {
+  if (!process.env.SECRET) {
     // 如果没有设置密码，重定向到警告页面
     const warningUrl = new URL('/warning', request.url);
     return NextResponse.redirect(warningUrl);
@@ -22,21 +20,10 @@ export async function middleware(request: NextRequest) {
 
   // 从cookie获取认证信息
   const authInfo = getAuthInfoFromCookie(request);
-
   if (!authInfo) {
     return handleAuthFailure(request, pathname);
   }
 
-  // localstorage模式：在middleware中完成验证
-  if (storageType === 'localstorage') {
-    if (!authInfo.password || authInfo.password !== process.env.PASSWORD) {
-      return handleAuthFailure(request, pathname);
-    }
-    return NextResponse.next();
-  }
-
-  // 其他模式：只验证签名
-  // 检查是否有用户名（非localStorage模式下密码不存储在cookie中）
   if (!authInfo.username || !authInfo.signature) {
     return handleAuthFailure(request, pathname);
   }
@@ -46,7 +33,7 @@ export async function middleware(request: NextRequest) {
     const isValidSignature = await verifySignature(
       authInfo.username,
       authInfo.signature,
-      process.env.PASSWORD || ''
+      process.env.SECRET || ''
     );
 
     // 签名验证通过即可
