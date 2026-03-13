@@ -112,7 +112,7 @@ async function resolveM3u8Links(
         // 提取 URI 部分
         const uriMatch = line.match(/URI="([^"]+)"/);
         if (uriMatch && uriMatch[1]) {
-          let keyUri = uriMatch[1];
+          const keyUri = uriMatch[1];
 
           // 转换为绝对路径
           if (!keyUri.startsWith("http://") && !keyUri.startsWith("https://")) {

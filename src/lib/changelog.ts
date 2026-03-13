@@ -11,6 +11,17 @@ export interface ChangelogEntry {
 
 export const changelog: ChangelogEntry[] = [
   {
+    version: "100.1.1",
+    date: "2026-02-27",
+    added: [
+      // 无新增内容
+    ],
+    changed: ["搜索页使用虚拟滚动，优化滚动性能"],
+    fixed: [
+      // 无修复内容
+    ],
+  },
+  {
     version: "100.0.3",
     date: "2025-10-27",
     added: [
