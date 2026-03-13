@@ -4,13 +4,15 @@
  */
 export function parseCustomTimeFormat(timeStr: string): Date {
   // 如果已经是标准格式，直接返回
-  if (timeStr.includes('T') || timeStr.includes('-')) {
+  if (timeStr.includes("T") || timeStr.includes("-")) {
     return new Date(timeStr);
   }
 
   // 处理 "20250824000000 +0800" 格式
   // 格式说明：YYYYMMDDHHMMSS +ZZZZ
-  const match = timeStr.match(/^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*([+-]\d{4})$/);
+  const match = timeStr.match(
+    /^(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\s*([+-]\d{4})$/,
+  );
 
   if (match) {
     const [, year, month, day, hour, minute, second, timezone] = match;
@@ -33,9 +35,9 @@ export function formatTimeToHHMM(timeString: string): string {
     if (isNaN(date.getTime())) {
       return timeString; // 如果解析失败，返回原始字符串
     }
-    return date.toLocaleTimeString('zh-CN', {
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleTimeString("zh-CN", {
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: false,
     });
   } catch {

@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface SearchSuggestionsProps {
   query: string;
@@ -12,7 +12,7 @@ interface SearchSuggestionsProps {
 
 interface SuggestionItem {
   text: string;
-  type: 'related';
+  type: "related";
   icon?: React.ReactNode;
 }
 
@@ -45,22 +45,22 @@ export default function SearchSuggestions({
         `/api/search/suggestions?q=${encodeURIComponent(searchQuery)}`,
         {
           signal: controller.signal,
-        }
+        },
       );
       if (response.ok) {
         const data = await response.json();
         const apiSuggestions = data.suggestions.map(
           (item: { text: string }) => ({
             text: item.text,
-            type: 'related' as const,
-          })
+            type: "related" as const,
+          }),
         );
         setSuggestions(apiSuggestions);
       }
     } catch (err: unknown) {
       // 类型保护判断 err 是否是 Error 类型
       if (err instanceof Error) {
-        if (err.name !== 'AbortError') {
+        if (err.name !== "AbortError") {
           // 不是取消请求导致的错误才清空
           setSuggestions([]);
         }
@@ -85,7 +85,7 @@ export default function SearchSuggestions({
         }
       }, 300); //300ms
     },
-    [isVisible, fetchSuggestionsFromAPI]
+    [isVisible, fetchSuggestionsFromAPI],
   );
 
   useEffect(() => {
@@ -115,16 +115,16 @@ export default function SearchSuggestions({
     };
 
     if (isVisible) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isVisible, onClose]);
 
   // 处理键盘事件，特别是回车键
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Enter' && isVisible) {
+      if (e.key === "Enter" && isVisible) {
         // 阻止默认行为，避免浏览器自动选择建议
         e.preventDefault();
         e.stopPropagation();
@@ -135,10 +135,10 @@ export default function SearchSuggestions({
     };
 
     if (isVisible) {
-      document.addEventListener('keydown', handleKeyDown, true);
+      document.addEventListener("keydown", handleKeyDown, true);
     }
 
-    return () => document.removeEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener("keydown", handleKeyDown, true);
   }, [isVisible, onClose, onEnterKey]);
 
   if (!isVisible || suggestions.length === 0) {
@@ -148,7 +148,7 @@ export default function SearchSuggestions({
   return (
     <div
       ref={containerRef}
-      className='absolute top-full left-0 right-0 z-[600] mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto'
+      className="absolute top-full left-0 right-0 z-[600] mt-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 max-h-80 overflow-y-auto"
     >
       {suggestions.map((suggestion) => (
         <button
@@ -156,7 +156,7 @@ export default function SearchSuggestions({
           onClick={() => onSelect(suggestion.text)}
           className="w-full px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150 flex items-center gap-3"
         >
-          <span className='flex-1 text-sm text-gray-700 dark:text-gray-300 truncate'>
+          <span className="flex-1 text-sm text-gray-700 dark:text-gray-300 truncate">
             {suggestion.text}
           </span>
         </button>

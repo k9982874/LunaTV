@@ -1,23 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-console */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
-import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
-import { searchFromApi } from '@/lib/downstream';
-import redis from '@/lib/redis';
-import { yellowWords } from '@/lib/yellow';
+import { getAuthInfoFromCookie } from "@/lib/auth";
+import { getAvailableApiSites, getCacheTime, getConfig } from "@/lib/config";
+import { searchFromApi } from "@/lib/downstream";
+import redis, { getCacheKey } from "@/lib/redis";
+import { yellowWords } from "@/lib/yellow";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
   if (!authInfo || !authInfo.username) {
-    return NextResponse.json({ error: '未登录' }, { status: 401 });
+    return NextResponse.json({ error: "未登录" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get('q');
+  const query = searchParams.get("q");
 
   if (!query) {
     const cacheTime = await getCacheTime();
@@ -25,12 +25,12 @@ export async function GET(request: NextRequest) {
       { results: [] },
       {
         headers: {
-          'Cache-Control': `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
-          'CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Vercel-CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Netlify-Vary': 'query',
+          "Cache-Control": `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
+          "CDN-Cache-Control": `public, s-maxage=${cacheTime}`,
+          "Vercel-CDN-Cache-Control": `public, s-maxage=${cacheTime}`,
+          "Netlify-Vary": "query",
         },
-      }
+      },
     );
   }
 
@@ -42,23 +42,23 @@ export async function GET(request: NextRequest) {
     Promise.race([
       searchFromApi(site, query),
       new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`${site.name} timeout`)), 20000)
+        setTimeout(() => reject(new Error(`${site.name} timeout`)), 20000),
       ),
     ]).catch((err) => {
       console.warn(`搜索失败 ${site.name}:`, err.message);
       return []; // 返回空数组而不是抛出错误
-    })
+    }),
   );
 
   try {
     const results = await Promise.allSettled(searchPromises);
     const successResults = results
-      .filter((result) => result.status === 'fulfilled')
+      .filter((result) => result.status === "fulfilled")
       .map((result) => (result as PromiseFulfilledResult<any>).value);
     let flattenedResults = successResults.flat();
     if (!config.SiteConfig.DisableYellowFilter) {
       flattenedResults = flattenedResults.filter((result) => {
-        const typeName = result.type_name || '';
+        const typeName = result.type_name || "";
         return !yellowWords.some((word: string) => typeName.includes(word));
       });
     }
@@ -72,24 +72,30 @@ export async function GET(request: NextRequest) {
     const tasks = [];
     for (const result of flattenedResults) {
       const data = result.episodes.reduce(
-        (acc: Record<string, string>, cur: string, index: number): Record<string, string> => {
+        (
+          acc: Map<string, string>,
+          cur: string,
+          index: number,
+        ): Map<string, string> => {
           const name = result.episodes_titles[index];
-          acc[name] = cur;
+          acc.set(name, cur);
 
-          result.episodes[index] =
-            `${process.env.SITE_BASE}/api/play?source=${result.source}&id=${result.id}&name=${name}`;
+          const url = `${process.env.SITE_BASE}/api/play/${result.source}/${result.id}/${name}.m3u8`;
+          result.episodes[index] = url;
 
           return acc;
         },
-        {} as Record<string, string>,
-      ) as Record<string, string>;
+        new Map<string, string>(),
+      );
 
-      const key = `${result.source}-${result.id}`;
-      tasks.push(redis.hmset(key, data, (_, result) => {
-        if (result === 'OK') {
-          redis.expire(key, 8 * 60 * 60); // 8小时过期
-        }
-      }));
+      const key = getCacheKey(result.source, result.id);
+      tasks.push(
+        redis.hset(key, data, (_, result) => {
+          if (result === 1) {
+            redis.expire(key, 8 * 60 * 60); // 8小时过期
+          }
+        }),
+      );
     }
 
     await Promise.all(tasks);
@@ -98,14 +104,14 @@ export async function GET(request: NextRequest) {
       { results: flattenedResults },
       {
         headers: {
-          'Cache-Control': `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
-          'CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Vercel-CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Netlify-Vary': 'query',
+          "Cache-Control": `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
+          "CDN-Cache-Control": `public, s-maxage=${cacheTime}`,
+          "Vercel-CDN-Cache-Control": `public, s-maxage=${cacheTime}`,
+          "Netlify-Vary": "query",
         },
-      }
+      },
     );
   } catch (error) {
-    return NextResponse.json({ error: '搜索失败' }, { status: 500 });
+    return NextResponse.json({ error: "搜索失败" }, { status: 500 });
   }
 }

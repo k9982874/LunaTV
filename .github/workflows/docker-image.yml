@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Docker 标签'
+        description: "Docker 标签"
         required: false
-        default: 'latest'
+        default: "latest"
         type: string
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

@@ -1,4 +1,4 @@
-import CryptoJS from 'crypto-js';
+import CryptoJS from "crypto-js";
 
 /**
  * 简单的对称加密工具
@@ -16,7 +16,7 @@ export class SimpleCrypto {
       const encrypted = CryptoJS.AES.encrypt(data, password).toString();
       return encrypted;
     } catch (error) {
-      throw new Error('加密失败');
+      throw new Error("加密失败");
     }
   }
 
@@ -32,12 +32,12 @@ export class SimpleCrypto {
       const decrypted = bytes.toString(CryptoJS.enc.Utf8);
 
       if (!decrypted) {
-        throw new Error('解密失败，请检查密码是否正确');
+        throw new Error("解密失败，请检查密码是否正确");
       }
 
       return decrypted;
     } catch (error) {
-      throw new Error('解密失败，请检查密码是否正确');
+      throw new Error("解密失败，请检查密码是否正确");
     }
   }
 

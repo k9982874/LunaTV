@@ -1,32 +1,32 @@
 /* eslint-disable no-console,no-case-declarations */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
-import { getConfig } from '@/lib/config';
-import { db } from '@/lib/db';
-import { deleteCachedLiveChannels, refreshLiveChannels } from '@/lib/live';
+import { getAuthInfoFromCookie } from "@/lib/auth";
+import { getConfig } from "@/lib/config";
+import { db } from "@/lib/db";
+import { deleteCachedLiveChannels, refreshLiveChannels } from "@/lib/live";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
     // 权限检查
     const authInfo = getAuthInfoFromCookie(request);
     if (!authInfo || !authInfo.username) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 });
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
     }
 
-    if (authInfo.role !== 'owner' && authInfo.role !== 'admin') {
+    if (authInfo.role !== "owner" && authInfo.role !== "admin") {
       return NextResponse.json(
-        { error: '权限不足，无法执行此操作' },
-        { status: 401 }
+        { error: "权限不足，无法执行此操作" },
+        { status: 401 },
       );
     }
 
     const config = await getConfig();
     if (!config) {
-      return NextResponse.json({ error: '配置不存在' }, { status: 404 });
+      return NextResponse.json({ error: "配置不存在" }, { status: 404 });
     }
 
     const body = await request.json();
@@ -38,28 +38,31 @@ export async function POST(request: NextRequest) {
     }
 
     switch (action) {
-      case 'add':
+      case "add":
         // 检查是否已存在相同的 key
         if (config.LiveConfig.some((l) => l.key === key)) {
-          return NextResponse.json({ error: '直播源 key 已存在' }, { status: 400 });
+          return NextResponse.json(
+            { error: "直播源 key 已存在" },
+            { status: 400 },
+          );
         }
 
         const liveInfo = {
           key: key as string,
           name: name as string,
           url: url as string,
-          ua: ua || '',
-          epg: epg || '',
-          from: 'custom' as 'custom' | 'config',
+          ua: ua || "",
+          epg: epg || "",
+          from: "custom" as "custom" | "config",
           channelNumber: 0,
           disabled: false,
-        }
+        };
 
         try {
           const nums = await refreshLiveChannels(liveInfo);
           liveInfo.channelNumber = nums;
         } catch (error) {
-          console.error('刷新直播源失败:', error);
+          console.error("刷新直播源失败:", error);
           liveInfo.channelNumber = 0;
         }
 
@@ -67,16 +70,19 @@ export async function POST(request: NextRequest) {
         config.LiveConfig.push(liveInfo);
         break;
 
-      case 'delete':
+      case "delete":
         // 删除直播源
         const deleteIndex = config.LiveConfig.findIndex((l) => l.key === key);
         if (deleteIndex === -1) {
-          return NextResponse.json({ error: '直播源不存在' }, { status: 404 });
+          return NextResponse.json({ error: "直播源不存在" }, { status: 404 });
         }
 
         const liveSource = config.LiveConfig[deleteIndex];
-        if (liveSource.from === 'config') {
-          return NextResponse.json({ error: '不能删除配置文件中的直播源' }, { status: 400 });
+        if (liveSource.from === "config") {
+          return NextResponse.json(
+            { error: "不能删除配置文件中的直播源" },
+            { status: 400 },
+          );
         }
 
         deleteCachedLiveChannels(key);
@@ -84,57 +90,63 @@ export async function POST(request: NextRequest) {
         config.LiveConfig.splice(deleteIndex, 1);
         break;
 
-      case 'enable':
+      case "enable":
         // 启用直播源
         const enableSource = config.LiveConfig.find((l) => l.key === key);
         if (!enableSource) {
-          return NextResponse.json({ error: '直播源不存在' }, { status: 404 });
+          return NextResponse.json({ error: "直播源不存在" }, { status: 404 });
         }
         enableSource.disabled = false;
         break;
 
-      case 'disable':
+      case "disable":
         // 禁用直播源
         const disableSource = config.LiveConfig.find((l) => l.key === key);
         if (!disableSource) {
-          return NextResponse.json({ error: '直播源不存在' }, { status: 404 });
+          return NextResponse.json({ error: "直播源不存在" }, { status: 404 });
         }
         disableSource.disabled = true;
         break;
 
-      case 'edit':
+      case "edit":
         // 编辑直播源
         const editSource = config.LiveConfig.find((l) => l.key === key);
         if (!editSource) {
-          return NextResponse.json({ error: '直播源不存在' }, { status: 404 });
+          return NextResponse.json({ error: "直播源不存在" }, { status: 404 });
         }
 
         // 配置文件中的直播源不允许编辑
-        if (editSource.from === 'config') {
-          return NextResponse.json({ error: '不能编辑配置文件中的直播源' }, { status: 400 });
+        if (editSource.from === "config") {
+          return NextResponse.json(
+            { error: "不能编辑配置文件中的直播源" },
+            { status: 400 },
+          );
         }
 
         // 更新字段（除了 key 和 from）
         editSource.name = name as string;
         editSource.url = url as string;
-        editSource.ua = ua || '';
-        editSource.epg = epg || '';
+        editSource.ua = ua || "";
+        editSource.epg = epg || "";
 
         // 刷新频道数
         try {
           const nums = await refreshLiveChannels(editSource);
           editSource.channelNumber = nums;
         } catch (error) {
-          console.error('刷新直播源失败:', error);
+          console.error("刷新直播源失败:", error);
           editSource.channelNumber = 0;
         }
         break;
 
-      case 'sort':
+      case "sort":
         // 排序直播源
         const { order } = body;
         if (!Array.isArray(order)) {
-          return NextResponse.json({ error: '排序数据格式错误' }, { status: 400 });
+          return NextResponse.json(
+            { error: "排序数据格式错误" },
+            { status: 400 },
+          );
         }
 
         // 创建新的排序后的数组
@@ -157,7 +169,7 @@ export async function POST(request: NextRequest) {
         break;
 
       default:
-        return NextResponse.json({ error: '未知操作' }, { status: 400 });
+        return NextResponse.json({ error: "未知操作" }, { status: 400 });
     }
 
     // 保存配置
@@ -166,8 +178,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '操作失败' },
-      { status: 500 }
+      { error: error instanceof Error ? error.message : "操作失败" },
+      { status: 500 },
     );
   }
 }

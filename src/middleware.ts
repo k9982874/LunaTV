@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
+import { getAuthInfoFromCookie } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -14,7 +14,7 @@ export async function middleware(request: NextRequest) {
 
   if (!process.env.SECRET) {
     // 如果没有设置密码，重定向到警告页面
-    const warningUrl = new URL('/warning', request.url);
+    const warningUrl = new URL("/warning", request.url);
     return NextResponse.redirect(warningUrl);
   }
 
@@ -33,7 +33,7 @@ export async function middleware(request: NextRequest) {
     const isValidSignature = await verifySignature(
       authInfo.username,
       authInfo.signature,
-      process.env.SECRET || ''
+      process.env.SECRET || "",
     );
 
     // 签名验证通过即可
@@ -50,7 +50,7 @@ export async function middleware(request: NextRequest) {
 async function verifySignature(
   data: string,
   signature: string,
-  secret: string
+  secret: string,
 ): Promise<boolean> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);
@@ -59,27 +59,27 @@ async function verifySignature(
   try {
     // 导入密钥
     const key = await crypto.subtle.importKey(
-      'raw',
+      "raw",
       keyData,
-      { name: 'HMAC', hash: 'SHA-256' },
+      { name: "HMAC", hash: "SHA-256" },
       false,
-      ['verify']
+      ["verify"],
     );
 
     // 将十六进制字符串转换为Uint8Array
     const signatureBuffer = new Uint8Array(
-      signature.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || []
+      signature.match(/.{1,2}/g)?.map((byte) => parseInt(byte, 16)) || [],
     );
 
     // 验证签名
     return await crypto.subtle.verify(
-      'HMAC',
+      "HMAC",
       key,
       signatureBuffer,
-      messageData
+      messageData,
     );
   } catch (error) {
-    console.error('签名验证失败:', error);
+    console.error("签名验证失败:", error);
     return false;
   }
 }
@@ -87,31 +87,31 @@ async function verifySignature(
 // 处理认证失败的情况
 function handleAuthFailure(
   request: NextRequest,
-  pathname: string
+  pathname: string,
 ): NextResponse {
   // 如果是 API 路由，返回 401 状态码
-  if (pathname.startsWith('/api')) {
-    return new NextResponse('Unauthorized', { status: 401 });
+  if (pathname.startsWith("/api")) {
+    return new NextResponse("Unauthorized", { status: 401 });
   }
 
   // 否则重定向到登录页面
-  const loginUrl = new URL('/login', request.url);
+  const loginUrl = new URL("/login", request.url);
   // 保留完整的URL，包括查询参数
   const fullUrl = `${pathname}${request.nextUrl.search}`;
-  loginUrl.searchParams.set('redirect', fullUrl);
+  loginUrl.searchParams.set("redirect", fullUrl);
   return NextResponse.redirect(loginUrl);
 }
 
 // 判断是否需要跳过认证的路径
 function shouldSkipAuth(pathname: string): boolean {
   const skipPaths = [
-    '/_next',
-    '/favicon.ico',
-    '/robots.txt',
-    '/manifest.json',
-    '/icons/',
-    '/logo.png',
-    '/screenshot.png',
+    "/_next",
+    "/favicon.ico",
+    "/robots.txt",
+    "/manifest.json",
+    "/icons/",
+    "/logo.png",
+    "/screenshot.png",
   ];
 
   return skipPaths.some((path) => pathname.startsWith(path));
@@ -120,6 +120,6 @@ function shouldSkipAuth(pathname: string): boolean {
 // 配置middleware匹配规则
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|login|warning|api/login|api/register|api/logout|api/cron|api/server-config).*)',
+    "/((?!_next/static|_next/image|favicon.ico|login|warning|api/login|api/register|api/logout|api/cron|api/server-config|api/play).*)",
   ],
 };

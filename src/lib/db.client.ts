@@ -1,5 +1,5 @@
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-empty-function */
-'use client';
+"use client";
 
 /**
  * 仅在浏览器端使用的数据库工具，目前基于 localStorage 实现。
@@ -14,16 +14,16 @@
  * 如后续需要在客户端读取收藏等其它数据，可按同样方式在此文件中补充实现。
  */
 
-import { getAuthInfoFromBrowserCookie } from './auth';
-import { SkipConfig } from './types';
+import { getAuthInfoFromBrowserCookie } from "./auth";
+import { SkipConfig } from "./types";
 
 // 全局错误触发函数
 function triggerGlobalError(message: string) {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     window.dispatchEvent(
-      new CustomEvent('globalError', {
+      new CustomEvent("globalError", {
         detail: { message },
-      })
+      }),
     );
   }
 }
@@ -51,7 +51,7 @@ export interface Favorite {
   total_episodes: number;
   save_time: number;
   search_title?: string;
-  origin?: 'vod' | 'live';
+  origin?: "vod" | "live";
 }
 
 // ---- 缓存数据结构 ----
@@ -69,8 +69,8 @@ interface UserCacheStore {
 }
 
 // 缓存相关常量
-const CACHE_PREFIX = 'moontv_cache_';
-const CACHE_VERSION = '1.0.0';
+const CACHE_PREFIX = "moontv_cache_";
+const CACHE_VERSION = "1.0.0";
 const CACHE_EXPIRE_TIME = 60 * 60 * 1000; // 一小时缓存过期
 
 // ---------------- 搜索历史相关常量 ----------------
@@ -107,14 +107,14 @@ class HybridCacheManager {
    * 获取用户缓存数据
    */
   private getUserCache(username: string): UserCacheStore {
-    if (typeof window === 'undefined') return {};
+    if (typeof window === "undefined") return {};
 
     try {
       const cacheKey = this.getUserCacheKey(username);
       const cached = localStorage.getItem(cacheKey);
       return cached ? JSON.parse(cached) : {};
     } catch (error) {
-      console.warn('获取用户缓存失败:', error);
+      console.warn("获取用户缓存失败:", error);
       return {};
     }
   }
@@ -123,31 +123,31 @@ class HybridCacheManager {
    * 保存用户缓存数据
    */
   private saveUserCache(username: string, cache: UserCacheStore): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     try {
       // 检查缓存大小，超过15MB时清理旧数据
       const cacheSize = JSON.stringify(cache).length;
       if (cacheSize > 15 * 1024 * 1024) {
-        console.warn('缓存过大，清理旧数据');
+        console.warn("缓存过大，清理旧数据");
         this.cleanOldCache(cache);
       }
 
       const cacheKey = this.getUserCacheKey(username);
       localStorage.setItem(cacheKey, JSON.stringify(cache));
     } catch (error) {
-      console.warn('保存用户缓存失败:', error);
+      console.warn("保存用户缓存失败:", error);
       // 存储空间不足时清理缓存后重试
       if (
         error instanceof DOMException &&
-        error.name === 'QuotaExceededError'
+        error.name === "QuotaExceededError"
       ) {
         this.clearAllCache();
         try {
           const cacheKey = this.getUserCacheKey(username);
           localStorage.setItem(cacheKey, JSON.stringify(cache));
         } catch (retryError) {
-          console.error('重试保存缓存仍然失败:', retryError);
+          console.error("重试保存缓存仍然失败:", retryError);
         }
       }
     }
@@ -177,7 +177,7 @@ class HybridCacheManager {
   private clearAllCache(): void {
     const keys = Object.keys(localStorage);
     keys.forEach((key) => {
-      if (key.startsWith('moontv_cache_')) {
+      if (key.startsWith("moontv_cache_")) {
         localStorage.removeItem(key);
       }
     });
@@ -332,7 +332,7 @@ class HybridCacheManager {
       const cacheKey = this.getUserCacheKey(targetUsername);
       localStorage.removeItem(cacheKey);
     } catch (error) {
-      console.warn('清除用户缓存失败:', error);
+      console.warn("清除用户缓存失败:", error);
     }
   }
 
@@ -340,7 +340,7 @@ class HybridCacheManager {
    * 清除所有过期缓存
    */
   clearExpiredCaches(): void {
-    if (typeof window === 'undefined') return;
+    if (typeof window === "undefined") return;
 
     try {
       const keysToRemove: string[] = [];
@@ -349,7 +349,7 @@ class HybridCacheManager {
         const key = localStorage.key(i);
         if (key?.startsWith(CACHE_PREFIX)) {
           try {
-            const cache = JSON.parse(localStorage.getItem(key) || '{}');
+            const cache = JSON.parse(localStorage.getItem(key) || "{}");
             // 检查是否有任何缓存数据过期
             let hasValidData = false;
             for (const [, cacheData] of Object.entries(cache)) {
@@ -370,7 +370,7 @@ class HybridCacheManager {
 
       keysToRemove.forEach((key) => localStorage.removeItem(key));
     } catch (error) {
-      console.warn('清除过期缓存失败:', error);
+      console.warn("清除过期缓存失败:", error);
     }
   }
 }
@@ -384,8 +384,8 @@ const cacheManager = HybridCacheManager.getInstance();
  * 立即从数据库刷新对应类型的缓存以保持数据一致性
  */
 async function handleDatabaseOperationFailure(
-  dataType: 'playRecords' | 'favorites' | 'searchHistory',
-  error: any
+  dataType: "playRecords" | "favorites" | "searchHistory",
+  error: any,
 ): Promise<void> {
   console.error(`数据库操作失败 (${dataType}):`, error);
   triggerGlobalError(`数据库操作失败`);
@@ -395,24 +395,24 @@ async function handleDatabaseOperationFailure(
     let eventName: string;
 
     switch (dataType) {
-      case 'playRecords':
+      case "playRecords":
         freshData = await fetchFromApi<Record<string, PlayRecord>>(
-          `/api/playrecords`
+          `/api/playrecords`,
         );
         cacheManager.cachePlayRecords(freshData);
-        eventName = 'playRecordsUpdated';
+        eventName = "playRecordsUpdated";
         break;
-      case 'favorites':
+      case "favorites":
         freshData = await fetchFromApi<Record<string, Favorite>>(
-          `/api/favorites`
+          `/api/favorites`,
         );
         cacheManager.cacheFavorites(freshData);
-        eventName = 'favoritesUpdated';
+        eventName = "favoritesUpdated";
         break;
-      case 'searchHistory':
+      case "searchHistory":
         freshData = await fetchFromApi<string[]>(`/api/searchhistory`);
         cacheManager.cacheSearchHistory(freshData);
-        eventName = 'searchHistoryUpdated';
+        eventName = "searchHistoryUpdated";
         break;
     }
 
@@ -420,7 +420,7 @@ async function handleDatabaseOperationFailure(
     window.dispatchEvent(
       new CustomEvent(eventName, {
         detail: freshData,
-      })
+      }),
     );
   } catch (refreshErr) {
     console.error(`刷新${dataType}缓存失败:`, refreshErr);
@@ -429,7 +429,7 @@ async function handleDatabaseOperationFailure(
 }
 
 // 页面加载时清理过期缓存
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   setTimeout(() => cacheManager.clearExpiredCaches(), 1000);
 }
 
@@ -439,7 +439,7 @@ if (typeof window !== 'undefined') {
  */
 async function fetchWithAuth(
   url: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<Response> {
   const res = await fetch(url, options);
   if (!res.ok) {
@@ -447,18 +447,18 @@ async function fetchWithAuth(
     if (res.status === 401) {
       // 调用 logout 接口
       try {
-        await fetch('/api/logout', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/logout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
         });
       } catch (error) {
-        console.error('注销请求失败:', error);
+        console.error("注销请求失败:", error);
       }
       const currentUrl = window.location.pathname + window.location.search;
-      const loginUrl = new URL('/login', window.location.origin);
-      loginUrl.searchParams.set('redirect', currentUrl);
+      const loginUrl = new URL("/login", window.location.origin);
+      loginUrl.searchParams.set("redirect", currentUrl);
       window.location.href = loginUrl.toString();
-      throw new Error('用户未授权，已跳转到登录页面');
+      throw new Error("用户未授权，已跳转到登录页面");
     }
     throw new Error(`请求 ${url} 失败: ${res.status}`);
   }
@@ -485,7 +485,7 @@ export function generateStorageKey(source: string, id: string): string {
  */
 export async function getAllPlayRecords(): Promise<Record<string, PlayRecord>> {
   // 服务器端渲染阶段直接返回空，交由客户端 useEffect 再行请求
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return {};
   }
 
@@ -501,15 +501,15 @@ export async function getAllPlayRecords(): Promise<Record<string, PlayRecord>> {
           cacheManager.cachePlayRecords(freshData);
           // 触发数据更新事件，供组件监听
           window.dispatchEvent(
-            new CustomEvent('playRecordsUpdated', {
+            new CustomEvent("playRecordsUpdated", {
               detail: freshData,
-            })
+            }),
           );
         }
       })
       .catch((err) => {
-        console.warn('后台同步播放记录失败:', err);
-        triggerGlobalError('后台同步播放记录失败');
+        console.warn("后台同步播放记录失败:", err);
+        triggerGlobalError("后台同步播放记录失败");
       });
 
     return cachedData;
@@ -517,13 +517,13 @@ export async function getAllPlayRecords(): Promise<Record<string, PlayRecord>> {
     // 缓存为空，直接从 API 获取并缓存
     try {
       const freshData = await fetchFromApi<Record<string, PlayRecord>>(
-        `/api/playrecords`
+        `/api/playrecords`,
       );
       cacheManager.cachePlayRecords(freshData);
       return freshData;
     } catch (err) {
-      console.error('获取播放记录失败:', err);
-      triggerGlobalError('获取播放记录失败');
+      console.error("获取播放记录失败:", err);
+      triggerGlobalError("获取播放记录失败");
       return {};
     }
   }
@@ -536,7 +536,7 @@ export async function getAllPlayRecords(): Promise<Record<string, PlayRecord>> {
 export async function savePlayRecord(
   source: string,
   id: string,
-  record: PlayRecord
+  record: PlayRecord,
 ): Promise<void> {
   const key = generateStorageKey(source, id);
 
@@ -547,23 +547,23 @@ export async function savePlayRecord(
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('playRecordsUpdated', {
+    new CustomEvent("playRecordsUpdated", {
       detail: cachedRecords,
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
-    await fetchWithAuth('/api/playrecords', {
-      method: 'POST',
+    await fetchWithAuth("/api/playrecords", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ key, record }),
     });
   } catch (err) {
-    await handleDatabaseOperationFailure('playRecords', err);
-    triggerGlobalError('保存播放记录失败');
+    await handleDatabaseOperationFailure("playRecords", err);
+    triggerGlobalError("保存播放记录失败");
     throw err;
   }
 }
@@ -574,7 +574,7 @@ export async function savePlayRecord(
  */
 export async function deletePlayRecord(
   source: string,
-  id: string
+  id: string,
 ): Promise<void> {
   const key = generateStorageKey(source, id);
 
@@ -585,19 +585,19 @@ export async function deletePlayRecord(
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('playRecordsUpdated', {
+    new CustomEvent("playRecordsUpdated", {
       detail: cachedRecords,
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
     await fetchWithAuth(`/api/playrecords?key=${encodeURIComponent(key)}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   } catch (err) {
-    await handleDatabaseOperationFailure('playRecords', err);
-    triggerGlobalError('删除播放记录失败');
+    await handleDatabaseOperationFailure("playRecords", err);
+    triggerGlobalError("删除播放记录失败");
     throw err;
   }
 }
@@ -610,7 +610,7 @@ export async function deletePlayRecord(
  */
 export async function getSearchHistory(): Promise<string[]> {
   // 服务器端渲染阶段直接返回空
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return [];
   }
 
@@ -626,15 +626,15 @@ export async function getSearchHistory(): Promise<string[]> {
           cacheManager.cacheSearchHistory(freshData);
           // 触发数据更新事件
           window.dispatchEvent(
-            new CustomEvent('searchHistoryUpdated', {
+            new CustomEvent("searchHistoryUpdated", {
               detail: freshData,
-            })
+            }),
           );
         }
       })
       .catch((err) => {
-        console.warn('后台同步搜索历史失败:', err);
-        triggerGlobalError('后台同步搜索历史失败');
+        console.warn("后台同步搜索历史失败:", err);
+        triggerGlobalError("后台同步搜索历史失败");
       });
 
     return cachedData;
@@ -645,8 +645,8 @@ export async function getSearchHistory(): Promise<string[]> {
       cacheManager.cacheSearchHistory(freshData);
       return freshData;
     } catch (err) {
-      console.error('获取搜索历史失败:', err);
-      triggerGlobalError('获取搜索历史失败');
+      console.error("获取搜索历史失败:", err);
+      triggerGlobalError("获取搜索历史失败");
       return [];
     }
   }
@@ -671,22 +671,22 @@ export async function addSearchHistory(keyword: string): Promise<void> {
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('searchHistoryUpdated', {
+    new CustomEvent("searchHistoryUpdated", {
       detail: newHistory,
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
-    await fetchWithAuth('/api/searchhistory', {
-      method: 'POST',
+    await fetchWithAuth("/api/searchhistory", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ keyword: trimmed }),
     });
   } catch (err) {
-    await handleDatabaseOperationFailure('searchHistory', err);
+    await handleDatabaseOperationFailure("searchHistory", err);
   }
 }
 
@@ -700,18 +700,18 @@ export async function clearSearchHistory(): Promise<void> {
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('searchHistoryUpdated', {
+    new CustomEvent("searchHistoryUpdated", {
       detail: [],
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
     await fetchWithAuth(`/api/searchhistory`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   } catch (err) {
-    await handleDatabaseOperationFailure('searchHistory', err);
+    await handleDatabaseOperationFailure("searchHistory", err);
   }
 }
 
@@ -730,9 +730,9 @@ export async function deleteSearchHistory(keyword: string): Promise<void> {
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('searchHistoryUpdated', {
+    new CustomEvent("searchHistoryUpdated", {
       detail: newHistory,
-    })
+    }),
   );
 
   // 异步同步到数据库
@@ -740,11 +740,11 @@ export async function deleteSearchHistory(keyword: string): Promise<void> {
     await fetchWithAuth(
       `/api/searchhistory?keyword=${encodeURIComponent(trimmed)}`,
       {
-        method: 'DELETE',
-      }
+        method: "DELETE",
+      },
     );
   } catch (err) {
-    await handleDatabaseOperationFailure('searchHistory', err);
+    await handleDatabaseOperationFailure("searchHistory", err);
   }
 }
 
@@ -756,7 +756,7 @@ export async function deleteSearchHistory(keyword: string): Promise<void> {
  */
 export async function getAllFavorites(): Promise<Record<string, Favorite>> {
   // 服务器端渲染阶段直接返回空
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return {};
   }
 
@@ -772,15 +772,15 @@ export async function getAllFavorites(): Promise<Record<string, Favorite>> {
           cacheManager.cacheFavorites(freshData);
           // 触发数据更新事件
           window.dispatchEvent(
-            new CustomEvent('favoritesUpdated', {
+            new CustomEvent("favoritesUpdated", {
               detail: freshData,
-            })
+            }),
           );
         }
       })
       .catch((err) => {
-        console.warn('后台同步收藏失败:', err);
-        triggerGlobalError('后台同步收藏失败');
+        console.warn("后台同步收藏失败:", err);
+        triggerGlobalError("后台同步收藏失败");
       });
 
     return cachedData;
@@ -788,13 +788,13 @@ export async function getAllFavorites(): Promise<Record<string, Favorite>> {
     // 缓存为空，直接从 API 获取并缓存
     try {
       const freshData = await fetchFromApi<Record<string, Favorite>>(
-        `/api/favorites`
+        `/api/favorites`,
       );
       cacheManager.cacheFavorites(freshData);
       return freshData;
     } catch (err) {
-      console.error('获取收藏失败:', err);
-      triggerGlobalError('获取收藏失败');
+      console.error("获取收藏失败:", err);
+      triggerGlobalError("获取收藏失败");
       return {};
     }
   }
@@ -807,7 +807,7 @@ export async function getAllFavorites(): Promise<Record<string, Favorite>> {
 export async function saveFavorite(
   source: string,
   id: string,
-  favorite: Favorite
+  favorite: Favorite,
 ): Promise<void> {
   const key = generateStorageKey(source, id);
 
@@ -818,23 +818,23 @@ export async function saveFavorite(
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('favoritesUpdated', {
+    new CustomEvent("favoritesUpdated", {
       detail: cachedFavorites,
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
-    await fetchWithAuth('/api/favorites', {
-      method: 'POST',
+    await fetchWithAuth("/api/favorites", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ key, favorite }),
     });
   } catch (err) {
-    await handleDatabaseOperationFailure('favorites', err);
-    triggerGlobalError('保存收藏失败');
+    await handleDatabaseOperationFailure("favorites", err);
+    triggerGlobalError("保存收藏失败");
     throw err;
   }
 }
@@ -845,7 +845,7 @@ export async function saveFavorite(
  */
 export async function deleteFavorite(
   source: string,
-  id: string
+  id: string,
 ): Promise<void> {
   const key = generateStorageKey(source, id);
 
@@ -856,19 +856,19 @@ export async function deleteFavorite(
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('favoritesUpdated', {
+    new CustomEvent("favoritesUpdated", {
       detail: cachedFavorites,
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
     await fetchWithAuth(`/api/favorites?key=${encodeURIComponent(key)}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   } catch (err) {
-    await handleDatabaseOperationFailure('favorites', err);
-    triggerGlobalError('删除收藏失败');
+    await handleDatabaseOperationFailure("favorites", err);
+    triggerGlobalError("删除收藏失败");
     throw err;
   }
 }
@@ -879,7 +879,7 @@ export async function deleteFavorite(
  */
 export async function isFavorited(
   source: string,
-  id: string
+  id: string,
 ): Promise<boolean> {
   const key = generateStorageKey(source, id);
 
@@ -894,15 +894,15 @@ export async function isFavorited(
           cacheManager.cacheFavorites(freshData);
           // 触发数据更新事件
           window.dispatchEvent(
-            new CustomEvent('favoritesUpdated', {
+            new CustomEvent("favoritesUpdated", {
               detail: freshData,
-            })
+            }),
           );
         }
       })
       .catch((err) => {
-        console.warn('后台同步收藏失败:', err);
-        triggerGlobalError('后台同步收藏失败');
+        console.warn("后台同步收藏失败:", err);
+        triggerGlobalError("后台同步收藏失败");
       });
 
     return !!cachedFavorites[key];
@@ -910,13 +910,13 @@ export async function isFavorited(
     // 缓存为空，直接从 API 获取并缓存
     try {
       const freshData = await fetchFromApi<Record<string, Favorite>>(
-        `/api/favorites`
+        `/api/favorites`,
       );
       cacheManager.cacheFavorites(freshData);
       return !!freshData[key];
     } catch (err) {
-      console.error('检查收藏状态失败:', err);
-      triggerGlobalError('检查收藏状态失败');
+      console.error("检查收藏状态失败:", err);
+      triggerGlobalError("检查收藏状态失败");
       return false;
     }
   }
@@ -932,20 +932,20 @@ export async function clearAllPlayRecords(): Promise<void> {
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('playRecordsUpdated', {
+    new CustomEvent("playRecordsUpdated", {
       detail: {},
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
     await fetchWithAuth(`/api/playrecords`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    await handleDatabaseOperationFailure('playRecords', err);
-    triggerGlobalError('清空播放记录失败');
+    await handleDatabaseOperationFailure("playRecords", err);
+    triggerGlobalError("清空播放记录失败");
     throw err;
   }
 }
@@ -960,20 +960,20 @@ export async function clearAllFavorites(): Promise<void> {
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('favoritesUpdated', {
+    new CustomEvent("favoritesUpdated", {
       detail: {},
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
     await fetchWithAuth(`/api/favorites`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
     });
   } catch (err) {
-    await handleDatabaseOperationFailure('favorites', err);
-    triggerGlobalError('清空收藏失败');
+    await handleDatabaseOperationFailure("favorites", err);
+    triggerGlobalError("清空收藏失败");
     throw err;
   }
 }
@@ -1003,44 +1003,44 @@ export async function refreshAllCache(): Promise<void> {
         fetchFromApi<Record<string, SkipConfig>>(`/api/skipconfigs`),
       ]);
 
-    if (playRecords.status === 'fulfilled') {
+    if (playRecords.status === "fulfilled") {
       cacheManager.cachePlayRecords(playRecords.value);
       window.dispatchEvent(
-        new CustomEvent('playRecordsUpdated', {
+        new CustomEvent("playRecordsUpdated", {
           detail: playRecords.value,
-        })
+        }),
       );
     }
 
-    if (favorites.status === 'fulfilled') {
+    if (favorites.status === "fulfilled") {
       cacheManager.cacheFavorites(favorites.value);
       window.dispatchEvent(
-        new CustomEvent('favoritesUpdated', {
+        new CustomEvent("favoritesUpdated", {
           detail: favorites.value,
-        })
+        }),
       );
     }
 
-    if (searchHistory.status === 'fulfilled') {
+    if (searchHistory.status === "fulfilled") {
       cacheManager.cacheSearchHistory(searchHistory.value);
       window.dispatchEvent(
-        new CustomEvent('searchHistoryUpdated', {
+        new CustomEvent("searchHistoryUpdated", {
           detail: searchHistory.value,
-        })
+        }),
       );
     }
 
-    if (skipConfigs.status === 'fulfilled') {
+    if (skipConfigs.status === "fulfilled") {
       cacheManager.cacheSkipConfigs(skipConfigs.value);
       window.dispatchEvent(
-        new CustomEvent('skipConfigsUpdated', {
+        new CustomEvent("skipConfigsUpdated", {
           detail: skipConfigs.value,
-        })
+        }),
       );
     }
   } catch (err) {
-    console.error('刷新缓存失败:', err);
-    triggerGlobalError('刷新缓存失败');
+    console.error("刷新缓存失败:", err);
+    triggerGlobalError("刷新缓存失败");
   }
 }
 
@@ -1068,10 +1068,10 @@ export function getCacheStatus(): {
 // ---------------- React Hook 辅助类型 ----------------
 
 export type CacheUpdateEvent =
-  | 'playRecordsUpdated'
-  | 'favoritesUpdated'
-  | 'searchHistoryUpdated'
-  | 'skipConfigsUpdated';
+  | "playRecordsUpdated"
+  | "favoritesUpdated"
+  | "searchHistoryUpdated"
+  | "skipConfigsUpdated";
 
 /**
  * 用于 React 组件监听数据更新的事件监听器
@@ -1086,10 +1086,10 @@ export type CacheUpdateEvent =
  */
 export function subscribeToDataUpdates<T>(
   eventType: CacheUpdateEvent,
-  callback: (data: T) => void
+  callback: (data: T) => void,
 ): () => void {
-  if (typeof window === 'undefined') {
-    return () => { };
+  if (typeof window === "undefined") {
+    return () => {};
   }
 
   const handleUpdate = (event: CustomEvent) => {
@@ -1121,8 +1121,8 @@ export async function preloadUserData(): Promise<void> {
 
   // 后台静默预加载，不阻塞界面
   refreshAllCache().catch((err) => {
-    console.warn('预加载用户数据失败:', err);
-    triggerGlobalError('预加载用户数据失败');
+    console.warn("预加载用户数据失败:", err);
+    triggerGlobalError("预加载用户数据失败");
   });
 }
 
@@ -1134,10 +1134,10 @@ export async function preloadUserData(): Promise<void> {
  */
 export async function getSkipConfig(
   source: string,
-  id: string
+  id: string,
 ): Promise<SkipConfig | null> {
   // 服务器端渲染阶段直接返回空
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return null;
   }
 
@@ -1155,14 +1155,14 @@ export async function getSkipConfig(
           cacheManager.cacheSkipConfigs(freshData);
           // 触发数据更新事件
           window.dispatchEvent(
-            new CustomEvent('skipConfigsUpdated', {
+            new CustomEvent("skipConfigsUpdated", {
               detail: freshData,
-            })
+            }),
           );
         }
       })
       .catch((err) => {
-        console.warn('后台同步跳过片头片尾配置失败:', err);
+        console.warn("后台同步跳过片头片尾配置失败:", err);
       });
 
     return cachedData[key] || null;
@@ -1170,13 +1170,13 @@ export async function getSkipConfig(
     // 缓存为空，直接从 API 获取并缓存
     try {
       const freshData = await fetchFromApi<Record<string, SkipConfig>>(
-        `/api/skipconfigs`
+        `/api/skipconfigs`,
       );
       cacheManager.cacheSkipConfigs(freshData);
       return freshData[key] || null;
     } catch (err) {
-      console.error('获取跳过片头片尾配置失败:', err);
-      triggerGlobalError('获取跳过片头片尾配置失败');
+      console.error("获取跳过片头片尾配置失败:", err);
+      triggerGlobalError("获取跳过片头片尾配置失败");
       return null;
     }
   }
@@ -1189,7 +1189,7 @@ export async function getSkipConfig(
 export async function saveSkipConfig(
   source: string,
   id: string,
-  config: SkipConfig
+  config: SkipConfig,
 ): Promise<void> {
   const key = generateStorageKey(source, id);
 
@@ -1200,23 +1200,23 @@ export async function saveSkipConfig(
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('skipConfigsUpdated', {
+    new CustomEvent("skipConfigsUpdated", {
       detail: cachedConfigs,
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
-    await fetchWithAuth('/api/skipconfigs', {
-      method: 'POST',
+    await fetchWithAuth("/api/skipconfigs", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ key, config }),
     });
   } catch (err) {
-    console.error('保存跳过片头片尾配置失败:', err);
-    triggerGlobalError('保存跳过片头片尾配置失败');
+    console.error("保存跳过片头片尾配置失败:", err);
+    triggerGlobalError("保存跳过片头片尾配置失败");
   }
 }
 
@@ -1226,7 +1226,7 @@ export async function saveSkipConfig(
  */
 export async function getAllSkipConfigs(): Promise<Record<string, SkipConfig>> {
   // 服务器端渲染阶段直接返回空
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return {};
   }
 
@@ -1242,15 +1242,15 @@ export async function getAllSkipConfigs(): Promise<Record<string, SkipConfig>> {
           cacheManager.cacheSkipConfigs(freshData);
           // 触发数据更新事件
           window.dispatchEvent(
-            new CustomEvent('skipConfigsUpdated', {
+            new CustomEvent("skipConfigsUpdated", {
               detail: freshData,
-            })
+            }),
           );
         }
       })
       .catch((err) => {
-        console.warn('后台同步跳过片头片尾配置失败:', err);
-        triggerGlobalError('后台同步跳过片头片尾配置失败');
+        console.warn("后台同步跳过片头片尾配置失败:", err);
+        triggerGlobalError("后台同步跳过片头片尾配置失败");
       });
 
     return cachedData;
@@ -1258,13 +1258,13 @@ export async function getAllSkipConfigs(): Promise<Record<string, SkipConfig>> {
     // 缓存为空，直接从 API 获取并缓存
     try {
       const freshData = await fetchFromApi<Record<string, SkipConfig>>(
-        `/api/skipconfigs`
+        `/api/skipconfigs`,
       );
       cacheManager.cacheSkipConfigs(freshData);
       return freshData;
     } catch (err) {
-      console.error('获取跳过片头片尾配置失败:', err);
-      triggerGlobalError('获取跳过片头片尾配置失败');
+      console.error("获取跳过片头片尾配置失败:", err);
+      triggerGlobalError("获取跳过片头片尾配置失败");
       return {};
     }
   }
@@ -1276,7 +1276,7 @@ export async function getAllSkipConfigs(): Promise<Record<string, SkipConfig>> {
  */
 export async function deleteSkipConfig(
   source: string,
-  id: string
+  id: string,
 ): Promise<void> {
   const key = generateStorageKey(source, id);
 
@@ -1287,18 +1287,18 @@ export async function deleteSkipConfig(
 
   // 触发立即更新事件
   window.dispatchEvent(
-    new CustomEvent('skipConfigsUpdated', {
+    new CustomEvent("skipConfigsUpdated", {
       detail: cachedConfigs,
-    })
+    }),
   );
 
   // 异步同步到数据库
   try {
     await fetchWithAuth(`/api/skipconfigs?key=${encodeURIComponent(key)}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   } catch (err) {
-    console.error('删除跳过片头片尾配置失败:', err);
-    triggerGlobalError('删除跳过片头片尾配置失败');
+    console.error("删除跳过片头片尾配置失败:", err);
+    triggerGlobalError("删除跳过片头片尾配置失败");
   }
 }

@@ -1,6 +1,6 @@
 /* eslint-disable */
 
-addEventListener('fetch', (event) => {
+addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
 });
 
@@ -9,16 +9,16 @@ async function handleRequest(request) {
     const url = new URL(request.url);
 
     // 如果访问根目录，返回HTML
-    if (url.pathname === '/') {
+    if (url.pathname === "/") {
       return new Response(getRootHtml(), {
         headers: {
-          'Content-Type': 'text/html; charset=utf-8',
+          "Content-Type": "text/html; charset=utf-8",
         },
       });
     }
 
     // 从请求路径中提取目标 URL
-    let actualUrlStr = decodeURIComponent(url.pathname.replace('/', ''));
+    let actualUrlStr = decodeURIComponent(url.pathname.replace("/", ""));
 
     // 判断用户输入的 URL 是否带有协议
     actualUrlStr = ensureProtocol(actualUrlStr, url.protocol);
@@ -29,7 +29,7 @@ async function handleRequest(request) {
     // 创建新 Headers 对象，排除以 'cf-' 开头的请求头
     const newHeaders = filterHeaders(
       request.headers,
-      (name) => !name.startsWith('cf-')
+      (name) => !name.startsWith("cf-"),
     );
 
     // 创建一个新的请求以访问目标 URL
@@ -37,7 +37,7 @@ async function handleRequest(request) {
       headers: newHeaders,
       method: request.method,
       body: request.body,
-      redirect: 'manual',
+      redirect: "manual",
     });
 
     // 发起对目标 URL 的请求
@@ -49,12 +49,12 @@ async function handleRequest(request) {
       body = response.body;
       // 创建新的 Response 对象以修改 Location 头部
       return handleRedirect(response, body);
-    } else if (response.headers.get('Content-Type')?.includes('text/html')) {
+    } else if (response.headers.get("Content-Type")?.includes("text/html")) {
       body = await handleHtmlContent(
         response,
         url.protocol,
         url.host,
-        actualUrlStr
+        actualUrlStr,
       );
     }
 
@@ -78,21 +78,21 @@ async function handleRequest(request) {
       {
         error: error.message,
       },
-      500
+      500,
     );
   }
 }
 
 // 确保 URL 带有协议
 function ensureProtocol(url, defaultProtocol) {
-  return url.startsWith('http://') || url.startsWith('https://')
+  return url.startsWith("http://") || url.startsWith("https://")
     ? url
-    : defaultProtocol + '//' + url;
+    : defaultProtocol + "//" + url;
 }
 
 // 处理重定向
 function handleRedirect(response, body) {
-  const location = new URL(response.headers.get('location'));
+  const location = new URL(response.headers.get("location"));
   const modifiedLocation = `/${encodeURIComponent(location.toString())}`;
   return new Response(body, {
     status: response.status,
@@ -107,12 +107,12 @@ function handleRedirect(response, body) {
 // 处理 HTML 内容中的相对路径
 async function handleHtmlContent(response, protocol, host, actualUrlStr) {
   const originalText = await response.text();
-  const regex = new RegExp('((href|src|action)=["\'])/(?!/)', 'g');
+  const regex = new RegExp("((href|src|action)=[\"'])/(?!/)", "g");
   let modifiedText = replaceRelativePaths(
     originalText,
     protocol,
     host,
-    new URL(actualUrlStr).origin
+    new URL(actualUrlStr).origin,
   );
 
   return modifiedText;
@@ -120,7 +120,7 @@ async function handleHtmlContent(response, protocol, host, actualUrlStr) {
 
 // 替换 HTML 内容中的相对路径
 function replaceRelativePaths(text, protocol, host, origin) {
-  const regex = new RegExp('((href|src|action)=["\'])/(?!/)', 'g');
+  const regex = new RegExp("((href|src|action)=[\"'])/(?!/)", "g");
   return text.replace(regex, `$1${protocol}//${host}/${origin}/`);
 }
 
@@ -129,7 +129,7 @@ function jsonResponse(data, status) {
   return new Response(JSON.stringify(data), {
     status: status,
     headers: {
-      'Content-Type': 'application/json; charset=utf-8',
+      "Content-Type": "application/json; charset=utf-8",
     },
   });
 }
@@ -141,14 +141,14 @@ function filterHeaders(headers, filterFunc) {
 
 // 设置禁用缓存的头部
 function setNoCacheHeaders(headers) {
-  headers.set('Cache-Control', 'no-store');
+  headers.set("Cache-Control", "no-store");
 }
 
 // 设置 CORS 头部
 function setCorsHeaders(headers) {
-  headers.set('Access-Control-Allow-Origin', '*');
-  headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  headers.set('Access-Control-Allow-Headers', '*');
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  headers.set("Access-Control-Allow-Headers", "*");
 }
 
 // 返回根目录的 HTML

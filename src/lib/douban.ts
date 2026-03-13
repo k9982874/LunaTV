@@ -1,3 +1,5 @@
+import { defalutUserAgent } from "@/lib/config";
+
 /**
  * 通用的豆瓣数据获取函数
  * @param url 请求的URL
@@ -12,11 +14,10 @@ export async function fetchDoubanData<T>(url: string): Promise<T> {
   const fetchOptions = {
     signal: controller.signal,
     headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-      Referer: 'https://movie.douban.com/',
-      Accept: 'application/json, text/plain, */*',
-      Origin: 'https://movie.douban.com',
+      "User-Agent": defalutUserAgent,
+      Referer: "https://movie.douban.com/",
+      Accept: "application/json, text/plain, */*",
+      Origin: "https://movie.douban.com",
     },
   };
 

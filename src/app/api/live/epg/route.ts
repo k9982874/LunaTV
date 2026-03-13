@@ -1,21 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getCachedLiveChannels } from '@/lib/live';
+import { getCachedLiveChannels } from "@/lib/live";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const sourceKey = searchParams.get('source');
-    const tvgId = searchParams.get('tvgId');
+    const sourceKey = searchParams.get("source");
+    const tvgId = searchParams.get("tvgId");
 
     if (!sourceKey) {
-      return NextResponse.json({ error: '缺少直播源参数' }, { status: 400 });
+      return NextResponse.json({ error: "缺少直播源参数" }, { status: 400 });
     }
 
     if (!tvgId) {
-      return NextResponse.json({ error: '缺少频道tvg-id参数' }, { status: 400 });
+      return NextResponse.json(
+        { error: "缺少频道tvg-id参数" },
+        { status: 400 },
+      );
     }
 
     const channelData = await getCachedLiveChannels(sourceKey);
@@ -27,9 +30,9 @@ export async function GET(request: NextRequest) {
         data: {
           tvgId,
           source: sourceKey,
-          epgUrl: '',
-          programs: []
-        }
+          epgUrl: "",
+          programs: [],
+        },
       });
     }
 
@@ -42,13 +45,10 @@ export async function GET(request: NextRequest) {
         tvgId,
         source: sourceKey,
         epgUrl: channelData.epgUrl,
-        programs: epgData
-      }
+        programs: epgData,
+      },
     });
   } catch (error) {
-    return NextResponse.json(
-      { error: '获取节目单信息失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "获取节目单信息失败" }, { status: 500 });
   }
 }

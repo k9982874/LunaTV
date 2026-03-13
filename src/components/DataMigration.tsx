@@ -1,9 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use client';
+"use client";
 
-import { AlertCircle, AlertTriangle, CheckCircle, Download, FileCheck, Lock, Upload } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  Download,
+  FileCheck,
+  Lock,
+  Upload,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface DataMigrationProps {
   onRefreshConfig?: () => Promise<void>;
@@ -12,7 +20,7 @@ interface DataMigrationProps {
 interface AlertModalProps {
   isOpen: boolean;
   onClose: () => void;
-  type: 'success' | 'error' | 'warning';
+  type: "success" | "error" | "warning";
   title: string;
   message?: string;
   html?: string;
@@ -29,10 +37,10 @@ const AlertModal = ({
   title,
   message,
   html,
-  confirmText = '确定',
+  confirmText = "确定",
   onConfirm,
   showConfirm = false,
-  timer
+  timer,
 }: AlertModalProps) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -54,11 +62,11 @@ const AlertModal = ({
 
   const getIcon = () => {
     switch (type) {
-      case 'success':
+      case "success":
         return <CheckCircle className="w-12 h-12 text-green-500" />;
-      case 'error':
+      case "error":
         return <AlertCircle className="w-12 h-12 text-red-500" />;
-      case 'warning':
+      case "warning":
         return <AlertTriangle className="w-12 h-12 text-yellow-500" />;
       default:
         return null;
@@ -67,33 +75,39 @@ const AlertModal = ({
 
   const getBgColor = () => {
     switch (type) {
-      case 'success':
-        return 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800';
-      case 'error':
-        return 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800';
-      case 'warning':
-        return 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800';
+      case "success":
+        return "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800";
+      case "error":
+        return "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800";
+      case "warning":
+        return "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800";
       default:
-        return 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800';
+        return "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800";
     }
   };
 
   return createPortal(
-    <div className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${isVisible ? 'opacity-100' : 'opacity-0'}`} onClick={onClose}>
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full border ${getBgColor()} transition-all duration-200 ${isVisible ? 'scale-100' : 'scale-95'}`} onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 transition-opacity duration-200 ${
+        isVisible ? "opacity-100" : "opacity-0"
+      }`}
+      onClick={onClose}
+    >
+      <div
+        className={`bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full border ${getBgColor()} transition-all duration-200 ${
+          isVisible ? "scale-100" : "scale-95"
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="p-6 text-center">
-          <div className="flex justify-center mb-4">
-            {getIcon()}
-          </div>
+          <div className="flex justify-center mb-4">{getIcon()}</div>
 
           <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {title}
           </h3>
 
           {message && (
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {message}
-            </p>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">{message}</p>
           )}
 
           {html && (
@@ -134,19 +148,19 @@ const AlertModal = ({
         </div>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
 const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
-  const [exportPassword, setExportPassword] = useState('');
-  const [importPassword, setImportPassword] = useState('');
+  const [exportPassword, setExportPassword] = useState("");
+  const [importPassword, setImportPassword] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [alertModal, setAlertModal] = useState<{
     isOpen: boolean;
-    type: 'success' | 'error' | 'warning';
+    type: "success" | "error" | "warning";
     title: string;
     message?: string;
     html?: string;
@@ -156,26 +170,26 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
     timer?: number;
   }>({
     isOpen: false,
-    type: 'success',
-    title: '',
+    type: "success",
+    title: "",
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const showAlert = (config: Omit<typeof alertModal, 'isOpen'>) => {
+  const showAlert = (config: Omit<typeof alertModal, "isOpen">) => {
     setAlertModal({ ...config, isOpen: true });
   };
 
   const hideAlert = () => {
-    setAlertModal(prev => ({ ...prev, isOpen: false }));
+    setAlertModal((prev) => ({ ...prev, isOpen: false }));
   };
 
   // 导出数据
   const handleExport = async () => {
     if (!exportPassword.trim()) {
       showAlert({
-        type: 'error',
-        title: '错误',
-        message: '请输入加密密码',
+        type: "error",
+        title: "错误",
+        message: "请输入加密密码",
       });
       return;
     }
@@ -183,10 +197,10 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
     try {
       setIsExporting(true);
 
-      const response = await fetch('/api/admin/data_migration/export', {
-        method: 'POST',
+      const response = await fetch("/api/admin/data_migration/export", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           password: exportPassword,
@@ -199,38 +213,38 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
       }
 
       // 获取文件名
-      const contentDisposition = response.headers.get('content-disposition');
+      const contentDisposition = response.headers.get("content-disposition");
       const filenameMatch = contentDisposition?.match(/filename="(.+)"/);
-      const filename = filenameMatch?.[1] || 'moontv-backup.dat';
+      const filename = filenameMatch?.[1] || "moontv-backup.dat";
 
       // 下载文件
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
       a.download = filename;
-      a.style.display = 'none';
-      a.style.position = 'fixed';
-      a.style.top = '0';
-      a.style.left = '0';
+      a.style.display = "none";
+      a.style.position = "fixed";
+      a.style.top = "0";
+      a.style.left = "0";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
       showAlert({
-        type: 'success',
-        title: '导出成功',
-        message: '数据已成功导出，请妥善保管备份文件和密码',
+        type: "success",
+        title: "导出成功",
+        message: "数据已成功导出，请妥善保管备份文件和密码",
         timer: 3000,
       });
 
-      setExportPassword('');
+      setExportPassword("");
     } catch (error) {
       showAlert({
-        type: 'error',
-        title: '导出失败',
-        message: error instanceof Error ? error.message : '导出过程中发生错误',
+        type: "error",
+        title: "导出失败",
+        message: error instanceof Error ? error.message : "导出过程中发生错误",
       });
     } finally {
       setIsExporting(false);
@@ -249,18 +263,18 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
   const handleImport = async () => {
     if (!selectedFile) {
       showAlert({
-        type: 'error',
-        title: '错误',
-        message: '请选择备份文件',
+        type: "error",
+        title: "错误",
+        message: "请选择备份文件",
       });
       return;
     }
 
     if (!importPassword.trim()) {
       showAlert({
-        type: 'error',
-        title: '错误',
-        message: '请输入解密密码',
+        type: "error",
+        title: "错误",
+        message: "请输入解密密码",
       });
       return;
     }
@@ -269,11 +283,11 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
       setIsImporting(true);
 
       const formData = new FormData();
-      formData.append('file', selectedFile);
-      formData.append('password', importPassword);
+      formData.append("file", selectedFile);
+      formData.append("password", importPassword);
 
-      const response = await fetch('/api/admin/data_migration/import', {
-        method: 'POST',
+      const response = await fetch("/api/admin/data_migration/import", {
+        method: "POST",
         body: formData,
       });
 
@@ -284,25 +298,27 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
       }
 
       showAlert({
-        type: 'success',
-        title: '导入成功',
+        type: "success",
+        title: "导入成功",
         html: `
           <div class="text-left">
             <p><strong>导入完成！</strong></p>
             <p class="mt-2">导入的用户数量: ${result.importedUsers}</p>
-            <p>备份时间: ${new Date(result.timestamp).toLocaleString('zh-CN')}</p>
-            <p>服务器版本: ${result.serverVersion || '未知版本'}</p>
+            <p>备份时间: ${new Date(result.timestamp).toLocaleString(
+              "zh-CN",
+            )}</p>
+            <p>服务器版本: ${result.serverVersion || "未知版本"}</p>
             <p class="mt-3 text-orange-600">请刷新页面以查看最新数据。</p>
           </div>
         `,
-        confirmText: '刷新页面',
+        confirmText: "刷新页面",
         showConfirm: true,
         onConfirm: async () => {
           // 清理状态
           setSelectedFile(null);
-          setImportPassword('');
+          setImportPassword("");
           if (fileInputRef.current) {
-            fileInputRef.current.value = '';
+            fileInputRef.current.value = "";
           }
 
           // 刷新配置
@@ -316,9 +332,9 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
       });
     } catch (error) {
       showAlert({
-        type: 'error',
-        title: '导入失败',
-        message: error instanceof Error ? error.message : '导入过程中发生错误',
+        type: "error",
+        title: "导入失败",
+        message: error instanceof Error ? error.message : "导入过程中发生错误",
       });
     } finally {
       setIsImporting(false);
@@ -345,8 +361,12 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
                 <Download className="w-4 h-4 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">数据导出</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">创建加密备份文件</p>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  数据导出
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  创建加密备份文件
+                </p>
               </div>
             </div>
 
@@ -373,7 +393,9 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
 
                 {/* 备份内容列表 */}
                 <div className="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                  <p className="font-medium text-gray-700 dark:text-gray-300 mb-2">备份内容：</p>
+                  <p className="font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    备份内容：
+                  </p>
                   <div className="grid grid-cols-2 gap-1">
                     <div>• 管理配置</div>
                     <div>• 用户数据</div>
@@ -387,10 +409,11 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
               <button
                 onClick={handleExport}
                 disabled={isExporting || !exportPassword.trim()}
-                className={`w-full px-4 py-2.5 rounded-lg font-medium transition-colors mt-10 ${isExporting || !exportPassword.trim()
-                  ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
+                className={`w-full px-4 py-2.5 rounded-lg font-medium transition-colors mt-10 ${
+                  isExporting || !exportPassword.trim()
+                    ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
               >
                 {isExporting ? (
                   <div className="flex items-center justify-center gap-2">
@@ -414,8 +437,12 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
                 <Upload className="w-4 h-4 text-red-600 dark:text-red-400" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">数据导入</h3>
-                <p className="text-sm text-red-600 dark:text-red-400">⚠️ 将清空现有数据</p>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                  数据导入
+                </h3>
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  ⚠️ 将清空现有数据
+                </p>
               </div>
             </div>
 
@@ -428,7 +455,8 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
                     备份文件
                     {selectedFile && (
                       <span className="ml-auto text-xs text-green-600 dark:text-green-400 font-normal">
-                        {selectedFile.name} ({(selectedFile.size / 1024).toFixed(1)} KB)
+                        {selectedFile.name} (
+                        {(selectedFile.size / 1024).toFixed(1)} KB)
                       </span>
                     )}
                   </label>
@@ -462,11 +490,14 @@ const DataMigration = ({ onRefreshConfig }: DataMigrationProps) => {
               {/* 导入按钮 */}
               <button
                 onClick={handleImport}
-                disabled={isImporting || !selectedFile || !importPassword.trim()}
-                className={`w-full px-4 py-2.5 rounded-lg font-medium transition-colors mt-10 ${isImporting || !selectedFile || !importPassword.trim()
-                  ? 'bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400'
-                  : 'bg-red-600 hover:bg-red-700 text-white'
-                  }`}
+                disabled={
+                  isImporting || !selectedFile || !importPassword.trim()
+                }
+                className={`w-full px-4 py-2.5 rounded-lg font-medium transition-colors mt-10 ${
+                  isImporting || !selectedFile || !importPassword.trim()
+                    ? "bg-gray-100 dark:bg-gray-700 cursor-not-allowed text-gray-500 dark:text-gray-400"
+                    : "bg-red-600 hover:bg-red-700 text-white"
+                }`}
               >
                 {isImporting ? (
                   <div className="flex items-center justify-center gap-2">

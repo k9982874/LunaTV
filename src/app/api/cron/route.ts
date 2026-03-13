@@ -1,38 +1,38 @@
 /* eslint-disable no-console,@typescript-eslint/no-explicit-any */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getConfig, refineConfig } from '@/lib/config';
-import { db } from '@/lib/db';
-import { fetchVideoDetail } from '@/lib/fetchVideoDetail';
-import { refreshLiveChannels } from '@/lib/live';
-import { SearchResult } from '@/lib/types';
+import { getConfig, refineConfig } from "@/lib/config";
+import { db } from "@/lib/db";
+import { fetchVideoDetail } from "@/lib/fetchVideoDetail";
+import { refreshLiveChannels } from "@/lib/live";
+import { SearchResult } from "@/lib/types";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   console.log(request.url);
   try {
-    console.log('Cron job triggered:', new Date().toISOString());
+    console.log("Cron job triggered:", new Date().toISOString());
 
     cronJob();
 
     return NextResponse.json({
       success: true,
-      message: 'Cron job executed successfully',
+      message: "Cron job executed successfully",
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Cron job failed:', error);
+    console.error("Cron job failed:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: 'Cron job failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
+        message: "Cron job failed",
+        error: error instanceof Error ? error.message : "Unknown error",
         timestamp: new Date().toISOString(),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -48,13 +48,16 @@ async function refreshAllLiveChannels() {
 
   // 并发刷新所有启用的直播源
   const refreshPromises = (config.LiveConfig || [])
-    .filter(liveInfo => !liveInfo.disabled)
+    .filter((liveInfo) => !liveInfo.disabled)
     .map(async (liveInfo) => {
       try {
         const nums = await refreshLiveChannels(liveInfo);
         liveInfo.channelNumber = nums;
       } catch (error) {
-        console.error(`刷新直播源失败 [${liveInfo.name || liveInfo.key}]:`, error);
+        console.error(
+          `刷新直播源失败 [${liveInfo.name || liveInfo.key}]:`,
+          error,
+        );
         liveInfo.channelNumber = 0;
       }
     });
@@ -68,7 +71,12 @@ async function refreshAllLiveChannels() {
 
 async function refreshConfig() {
   let config = await getConfig();
-  if (config && config.ConfigSubscribtion && config.ConfigSubscribtion.URL && config.ConfigSubscribtion.AutoUpdate) {
+  if (
+    config &&
+    config.ConfigSubscribtion &&
+    config.ConfigSubscribtion.URL &&
+    config.ConfigSubscribtion.AutoUpdate
+  ) {
     try {
       const response = await fetch(config.ConfigSubscribtion.URL);
 
@@ -81,28 +89,28 @@ async function refreshConfig() {
       // 对 configContent 进行 base58 解码
       let decodedContent;
       try {
-        const bs58 = (await import('bs58')).default;
+        const bs58 = (await import("bs58")).default;
         const decodedBytes = bs58.decode(configContent);
         decodedContent = new TextDecoder().decode(decodedBytes);
       } catch (decodeError) {
-        console.warn('Base58 解码失败:', decodeError);
+        console.warn("Base58 解码失败:", decodeError);
         throw decodeError;
       }
 
       try {
         JSON.parse(decodedContent);
       } catch (e) {
-        throw new Error('配置文件格式错误，请检查 JSON 语法');
+        throw new Error("配置文件格式错误，请检查 JSON 语法");
       }
       config.ConfigFile = decodedContent;
       config.ConfigSubscribtion.LastCheck = new Date().toISOString();
       config = refineConfig(config);
       await db.saveAdminConfig(config);
     } catch (e) {
-      console.error('刷新配置失败:', e);
+      console.error("刷新配置失败:", e);
     }
   } else {
-    console.log('跳过刷新：未配置订阅地址或自动更新');
+    console.log("跳过刷新：未配置订阅地址或自动更新");
   }
 }
 
@@ -117,7 +125,7 @@ async function refreshRecordAndFavorites() {
     const getDetail = async (
       source: string,
       id: string,
-      fallbackTitle: string
+      fallbackTitle: string,
     ): Promise<SearchResult | null> => {
       const key = `${source}+${id}`;
       let promise = detailCache.get(key);
@@ -152,7 +160,7 @@ async function refreshRecordAndFavorites() {
 
         for (const [key, record] of Object.entries(playRecords)) {
           try {
-            const [source, id] = key.split('+');
+            const [source, id] = key.split("+");
             if (!source || !id) {
               console.warn(`跳过无效的播放记录键: ${key}`);
               continue;
@@ -179,7 +187,7 @@ async function refreshRecordAndFavorites() {
                 search_title: record.search_title,
               });
               console.log(
-                `更新播放记录: ${record.title} (${record.total_episodes} -> ${episodeCount})`
+                `更新播放记录: ${record.title} (${record.total_episodes} -> ${episodeCount})`,
               );
             }
 
@@ -199,14 +207,14 @@ async function refreshRecordAndFavorites() {
       try {
         let favorites = await db.getAllFavorites(user.username);
         favorites = Object.fromEntries(
-          Object.entries(favorites).filter(([_, fav]) => fav.origin !== 'live')
+          Object.entries(favorites).filter(([_, fav]) => fav.origin !== "live"),
         );
         const totalFavorites = Object.keys(favorites).length;
         let processedFavorites = 0;
 
         for (const [key, fav] of Object.entries(favorites)) {
           try {
-            const [source, id] = key.split('+');
+            const [source, id] = key.split("+");
             if (!source || !id) {
               console.warn(`跳过无效的收藏键: ${key}`);
               continue;
@@ -230,7 +238,7 @@ async function refreshRecordAndFavorites() {
                 search_title: fav.search_title,
               });
               console.log(
-                `更新收藏: ${fav.title} (${fav.total_episodes} -> ${favEpisodeCount})`
+                `更新收藏: ${fav.title} (${fav.total_episodes} -> ${favEpisodeCount})`,
               );
             }
 
@@ -247,8 +255,8 @@ async function refreshRecordAndFavorites() {
       }
     }
 
-    console.log('刷新播放记录/收藏任务完成');
+    console.log("刷新播放记录/收藏任务完成");
   } catch (err) {
-    console.error('刷新播放记录/收藏任务启动失败', err);
+    console.error("刷新播放记录/收藏任务启动失败", err);
   }
 }

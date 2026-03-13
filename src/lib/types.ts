@@ -1,9 +1,9 @@
-import { AdminConfig } from './admin.types';
+import { AdminConfig } from "./admin.types";
 
 // 用户数据结构
 export interface User {
   username: string;
-  role: 'user' | 'admin' | 'owner';
+  role: "user" | "admin" | "owner";
   banned?: boolean;
   enabledApis?: string[]; // 优先级高于tags限制
   tags?: string[]; // 多 tags 取并集限制
@@ -21,7 +21,7 @@ export interface ApiSource {
   name: string;
   api: string;
   detail?: string;
-  from: 'config' | 'custom';
+  from: "config" | "custom";
   disabled?: boolean;
 }
 
@@ -29,10 +29,10 @@ export interface ApiSource {
 export interface LiveSource {
   key: string;
   name: string;
-  url: string;  // m3u 地址
+  url: string; // m3u 地址
   ua?: string;
   epg?: string; // 节目单
-  from: 'config' | 'custom';
+  from: "config" | "custom";
   channelNumber?: number;
   disabled?: boolean;
 }
@@ -40,9 +40,9 @@ export interface LiveSource {
 // 分类数据结构
 export interface Category {
   name?: string;
-  type: 'movie' | 'tv';
+  type: "movie" | "tv";
   query: string;
-  from: 'config' | 'custom';
+  from: "config" | "custom";
   disabled?: boolean;
 }
 
@@ -69,7 +69,7 @@ export interface Favorite {
   cover: string;
   save_time: number; // 记录保存时间（时间戳）
   search_title: string; // 搜索时使用的标题
-  origin?: 'vod' | 'live';
+  origin?: "vod" | "live";
 }
 
 // 存储接口
@@ -79,7 +79,7 @@ export interface IStorage {
   setPlayRecord(
     userName: string,
     key: string,
-    record: PlayRecord
+    record: PlayRecord,
   ): Promise<void>;
   getAllPlayRecords(userName: string): Promise<{ [key: string]: PlayRecord }>;
   deletePlayRecord(userName: string, key: string): Promise<void>;
@@ -106,7 +106,9 @@ export interface IStorage {
   deleteSearchHistory(userName: string, keyword?: string): Promise<void>;
 
   // 用户列表
-  getAllUsers(withPassword?: boolean): Promise<(User & { password?: string })[]>;
+  getAllUsers(
+    withPassword?: boolean,
+  ): Promise<(User & { password?: string })[]>;
 
   // 管理员配置相关
   getAdminConfig(): Promise<AdminConfig | null>;
@@ -116,13 +118,13 @@ export interface IStorage {
   getSkipConfig(
     userName: string,
     source: string,
-    id: string
+    id: string,
   ): Promise<SkipConfig | null>;
   setSkipConfig(
     userName: string,
     source: string,
     id: string,
-    config: SkipConfig
+    config: SkipConfig,
   ): Promise<void>;
   deleteSkipConfig(userName: string, source: string, id: string): Promise<void>;
   getAllSkipConfigs(userName: string): Promise<{ [key: string]: SkipConfig }>;

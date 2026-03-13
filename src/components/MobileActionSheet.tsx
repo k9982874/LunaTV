@@ -1,13 +1,13 @@
-import { Radio, X } from 'lucide-react';
-import Image from 'next/image';
-import React, { useEffect, useState } from 'react';
+import { Radio, X } from "lucide-react";
+import Image from "next/image";
+import React, { useEffect, useState } from "react";
 
 interface ActionItem {
   id: string;
   label: string;
   icon: React.ReactNode;
   onClick: (e?: React.MouseEvent) => void | Promise<void>;
-  color?: 'default' | 'danger' | 'primary';
+  color?: "default" | "danger" | "primary";
   disabled?: boolean;
 }
 
@@ -22,7 +22,7 @@ interface MobileActionSheetProps {
   sourceName?: string; // 播放源名称
   currentEpisode?: number; // 当前集数
   totalEpisodes?: number; // 总集数
-  origin?: 'vod' | 'live';
+  origin?: "vod" | "live";
 }
 
 const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
@@ -36,7 +36,7 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
   sourceName,
   currentEpisode,
   totalEpisodes,
-  origin = 'vod',
+  origin = "vod",
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -96,12 +96,12 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
       };
 
       // 设置body样式来阻止滚动，但保持原位置
-      body.style.position = 'fixed';
+      body.style.position = "fixed";
       body.style.top = `-${scrollY}px`;
       body.style.left = `-${scrollX}px`;
-      body.style.right = '0';
-      body.style.width = '100%';
-      body.style.overflow = 'hidden';
+      body.style.right = "0";
+      body.style.width = "100%";
+      body.style.overflow = "hidden";
       body.style.paddingRight = `${scrollBarWidth}px`;
 
       return () => {
@@ -125,38 +125,38 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
   // ESC键关闭
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         onClose();
       }
     };
 
     if (isVisible) {
-      document.addEventListener('keydown', handleEsc);
-      return () => document.removeEventListener('keydown', handleEsc);
+      document.addEventListener("keydown", handleEsc);
+      return () => document.removeEventListener("keydown", handleEsc);
     }
   }, [isVisible, onClose]);
 
   if (!isVisible) return null;
 
-  const getActionColor = (color: ActionItem['color']) => {
+  const getActionColor = (color: ActionItem["color"]) => {
     switch (color) {
-      case 'danger':
-        return 'text-red-600 dark:text-red-400';
-      case 'primary':
-        return 'text-green-600 dark:text-green-400';
+      case "danger":
+        return "text-red-600 dark:text-red-400";
+      case "primary":
+        return "text-green-600 dark:text-green-400";
       default:
-        return 'text-gray-700 dark:text-gray-300';
+        return "text-gray-700 dark:text-gray-300";
     }
   };
 
-  const getActionHoverColor = (color: ActionItem['color']) => {
+  const getActionHoverColor = (color: ActionItem["color"]) => {
     switch (color) {
-      case 'danger':
-        return 'hover:bg-red-50/50 dark:hover:bg-red-900/10';
-      case 'primary':
-        return 'hover:bg-green-50/50 dark:hover:bg-green-900/10';
+      case "danger":
+        return "hover:bg-red-50/50 dark:hover:bg-red-900/10";
+      case "primary":
+        return "hover:bg-green-50/50 dark:hover:bg-green-900/10";
       default:
-        return 'hover:bg-gray-50/50 dark:hover:bg-gray-800/20';
+        return "hover:bg-gray-50/50 dark:hover:bg-gray-800/20";
     }
   };
 
@@ -169,13 +169,14 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
         e.stopPropagation();
       }}
       style={{
-        touchAction: 'none', // 禁用所有触摸操作
+        touchAction: "none", // 禁用所有触摸操作
       }}
     >
       {/* 背景遮罩 */}
       <div
-        className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ease-out ${isAnimating ? 'opacity-100' : 'opacity-0'
-          }`}
+        className={`absolute inset-0 bg-black/50 transition-opacity duration-200 ease-out ${
+          isAnimating ? "opacity-100" : "opacity-0"
+        }`}
         onClick={onClose}
         onTouchMove={(e) => {
           // 只阻止滚动，允许其他触摸事件（包括点击）
@@ -186,9 +187,9 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
           e.preventDefault();
         }}
         style={{
-          backdropFilter: 'blur(4px)',
-          willChange: 'opacity',
-          touchAction: 'none', // 禁用所有触摸操作
+          backdropFilter: "blur(4px)",
+          willChange: "opacity",
+          touchAction: "none", // 禁用所有触摸操作
         }}
       />
 
@@ -200,14 +201,14 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
           e.stopPropagation();
         }}
         style={{
-          marginBottom: 'calc(1rem + env(safe-area-inset-bottom))',
-          willChange: 'transform, opacity',
-          backfaceVisibility: 'hidden', // 避免闪烁
+          marginBottom: "calc(1rem + env(safe-area-inset-bottom))",
+          willChange: "transform, opacity",
+          backfaceVisibility: "hidden", // 避免闪烁
           transform: isAnimating
-            ? 'translateY(0) translateZ(0)'
-            : 'translateY(100%) translateZ(0)', // 组合变换保持滑入效果和硬件加速
+            ? "translateY(0) translateZ(0)"
+            : "translateY(100%) translateZ(0)", // 组合变换保持滑入效果和硬件加速
           opacity: isAnimating ? 1 : 0,
-          touchAction: 'auto', // 允许操作表单内的正常触摸操作
+          touchAction: "auto", // 允许操作表单内的正常触摸操作
         }}
       >
         {/* 头部 */}
@@ -219,7 +220,9 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
                   src={poster}
                   alt={title}
                   fill
-                  className={origin === 'live' ? 'object-contain' : 'object-cover'}
+                  className={
+                    origin === "live" ? "object-contain" : "object-cover"
+                  }
                   loading="lazy"
                 />
               </div>
@@ -231,8 +234,11 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
                 </h3>
                 {sourceName && (
                   <span className="flex-shrink-0 text-xs px-2 py-1 border border-gray-300 dark:border-gray-600 rounded text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800">
-                    {origin === 'live' && (
-                      <Radio size={12} className="inline-block text-gray-500 dark:text-gray-400 mr-1.5" />
+                    {origin === "live" && (
+                      <Radio
+                        size={12}
+                        className="inline-block text-gray-500 dark:text-gray-400 mr-1.5"
+                      />
                     )}
                     {sourceName}
                   </span>
@@ -264,42 +270,49 @@ const MobileActionSheet: React.FC<MobileActionSheetProps> = ({
                 disabled={action.disabled}
                 className={`
                   w-full flex items-center gap-4 py-4 px-2 transition-all duration-150 ease-out
-                  ${action.disabled
-                    ? 'opacity-50 cursor-not-allowed'
-                    : `${getActionHoverColor(action.color)} active:scale-[0.98]`
+                  ${
+                    action.disabled
+                      ? "opacity-50 cursor-not-allowed"
+                      : `${getActionHoverColor(
+                          action.color,
+                        )} active:scale-[0.98]`
                   }
                 `}
-                style={{ willChange: 'transform, background-color' }}
+                style={{ willChange: "transform, background-color" }}
               >
                 {/* 图标 - 使用线条风格 */}
                 <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
-                  <span className={`transition-colors duration-150 ${action.disabled
-                    ? 'text-gray-400 dark:text-gray-600'
-                    : getActionColor(action.color)
-                    }`}>
+                  <span
+                    className={`transition-colors duration-150 ${
+                      action.disabled
+                        ? "text-gray-400 dark:text-gray-600"
+                        : getActionColor(action.color)
+                    }`}
+                  >
                     {action.icon}
                   </span>
                 </div>
 
                 {/* 文字 */}
-                <span className={`
+                <span
+                  className={`
                   text-left font-medium text-base flex-1
-                  ${action.disabled
-                    ? 'text-gray-400 dark:text-gray-600'
-                    : 'text-gray-900 dark:text-gray-100'
+                  ${
+                    action.disabled
+                      ? "text-gray-400 dark:text-gray-600"
+                      : "text-gray-900 dark:text-gray-100"
                   }
-                `}>
+                `}
+                >
                   {action.label}
                 </span>
 
                 {/* 播放进度 - 只在播放按钮且有播放记录时显示 */}
-                {action.id === 'play' && currentEpisode && totalEpisodes && (
+                {action.id === "play" && currentEpisode && totalEpisodes && (
                   <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
                     {currentEpisode}/{totalEpisodes}
                   </span>
                 )}
-
-
               </button>
 
               {/* 分割线 - 最后一项不显示 */}

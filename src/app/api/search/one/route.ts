@@ -1,36 +1,36 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
-import { getAvailableApiSites, getCacheTime, getConfig } from '@/lib/config';
-import { searchFromApi } from '@/lib/downstream';
-import redis from '@/lib/redis';
-import { yellowWords } from '@/lib/yellow';
+import { getAuthInfoFromCookie } from "@/lib/auth";
+import { getAvailableApiSites, getCacheTime, getConfig } from "@/lib/config";
+import { searchFromApi } from "@/lib/downstream";
+import redis, { getCacheKey } from "@/lib/redis";
+import { yellowWords } from "@/lib/yellow";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 // OrionTV 兼容接口
 export async function GET(request: NextRequest) {
   const authInfo = getAuthInfoFromCookie(request);
   if (!authInfo || !authInfo.username) {
-    return NextResponse.json({ error: '未登录' }, { status: 401 });
+    return NextResponse.json({ error: "未登录" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
-  const query = searchParams.get('q');
-  const resourceId = searchParams.get('resourceId');
+  const query = searchParams.get("q");
+  const resourceId = searchParams.get("resourceId");
 
   if (!query || !resourceId) {
     const cacheTime = await getCacheTime();
     return NextResponse.json(
-      { result: null, error: '缺少必要参数: q 或 resourceId' },
+      { result: null, error: "缺少必要参数: q 或 resourceId" },
       {
         headers: {
-          'Cache-Control': `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
-          'CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Vercel-CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Netlify-Vary': 'query',
+          "Cache-Control": `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
+          "CDN-Cache-Control": `public, s-maxage=${cacheTime}`,
+          "Vercel-CDN-Cache-Control": `public, s-maxage=${cacheTime}`,
+          "Netlify-Vary": "query",
         },
-      }
+      },
     );
   }
 
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
           error: `未找到指定的视频源: ${resourceId}`,
           result: null,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
     let successResults = results.filter((r) => r.title === query);
     if (!config.SiteConfig.DisableYellowFilter) {
       successResults = successResults.filter((result) => {
-        const typeName = result.type_name || '';
+        const typeName = result.type_name || "";
         return !yellowWords.some((word: string) => typeName.includes(word));
       });
     }
@@ -63,34 +63,40 @@ export async function GET(request: NextRequest) {
     if (successResults.length === 0) {
       return NextResponse.json(
         {
-          error: '未找到结果',
+          error: "未找到结果",
           result: null,
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     const tasks = [];
     for (const result of successResults) {
       const data = result.episodes.reduce(
-        (acc: Record<string, string>, cur: string, index: number): Record<string, string> => {
+        (
+          acc: Map<string, string>,
+          cur: string,
+          index: number,
+        ): Map<string, string> => {
           const name = result.episodes_titles[index];
-          acc[name] = cur;
+          acc.set(name, cur);
 
-          result.episodes[index] =
-            `${process.env.SITE_BASE}/api/play?source=${result.source}&id=${result.id}&name=${name}`;
+          const url = `${process.env.SITE_BASE}/api/play/${result.source}/${result.id}/${name}.m3u8`;
+          result.episodes[index] = url;
 
           return acc;
         },
-        {} as Record<string, string>,
-      ) as Record<string, string>;
+        new Map<string, string>(),
+      );
 
-      const key = `${result.source}-${result.id}`;
-      tasks.push(redis.hmset(key, data, (_, result) => {
-        if (result === 'OK') {
-          redis.expire(key, 8 * 60 * 60); // 8小时过期
-        }
-      }));
+      const key = getCacheKey(result.source, result.id);
+      tasks.push(
+        redis.hset(key, data, (_, result) => {
+          if (result === 1) {
+            redis.expire(key, 8 * 60 * 60); // 8小时过期
+          }
+        }),
+      );
     }
 
     await Promise.all(tasks);
@@ -99,20 +105,20 @@ export async function GET(request: NextRequest) {
       { results: successResults },
       {
         headers: {
-          'Cache-Control': `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
-          'CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Vercel-CDN-Cache-Control': `public, s-maxage=${cacheTime}`,
-          'Netlify-Vary': 'query',
+          "Cache-Control": `public, max-age=${cacheTime}, s-maxage=${cacheTime}`,
+          "CDN-Cache-Control": `public, s-maxage=${cacheTime}`,
+          "Vercel-CDN-Cache-Control": `public, s-maxage=${cacheTime}`,
+          "Netlify-Vary": "query",
         },
-      }
+      },
     );
   } catch (error) {
     return NextResponse.json(
       {
-        error: '搜索失败',
+        error: "搜索失败",
         result: null,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

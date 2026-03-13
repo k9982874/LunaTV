@@ -1,25 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-console */
-import he from 'he';
-import Hls from 'hls.js';
+import he from "he";
+import Hls from "hls.js";
+
+const characters =
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+export function randomString(length: number): string {
+  let result = "";
+  for (let i = 0; i < length; i++) {
+    result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
 
 function getDoubanImageProxyConfig(): {
   proxyType:
-  | 'direct'
-  | 'server'
-  | 'img3'
-  | 'cmliussss-cdn-tencent'
-  | 'cmliussss-cdn-ali'
-  | 'custom';
+    | "direct"
+    | "server"
+    | "img3"
+    | "cmliussss-cdn-tencent"
+    | "cmliussss-cdn-ali"
+    | "custom";
   proxyUrl: string;
 } {
   const doubanImageProxyType =
-    localStorage.getItem('doubanImageProxyType') ||
+    localStorage.getItem("doubanImageProxyType") ||
     (window as any).RUNTIME_CONFIG?.DOUBAN_IMAGE_PROXY_TYPE ||
-    'cmliussss-cdn-tencent';
+    "cmliussss-cdn-tencent";
   const doubanImageProxy =
-    localStorage.getItem('doubanImageProxyUrl') ||
+    localStorage.getItem("doubanImageProxyUrl") ||
     (window as any).RUNTIME_CONFIG?.DOUBAN_IMAGE_PROXY ||
-    '';
+    "";
   return {
     proxyType: doubanImageProxyType,
     proxyUrl: doubanImageProxy,
@@ -33,29 +44,29 @@ export function processImageUrl(originalUrl: string): string {
   if (!originalUrl) return originalUrl;
 
   // 仅处理豆瓣图片代理
-  if (!originalUrl.includes('doubanio.com')) {
+  if (!originalUrl.includes("doubanio.com")) {
     return originalUrl;
   }
 
   const { proxyType, proxyUrl } = getDoubanImageProxyConfig();
   switch (proxyType) {
-    case 'server':
+    case "server":
       return `/api/image-proxy?url=${encodeURIComponent(originalUrl)}`;
-    case 'img3':
-      return originalUrl.replace(/img\d+\.doubanio\.com/g, 'img3.doubanio.com');
-    case 'cmliussss-cdn-tencent':
+    case "img3":
+      return originalUrl.replace(/img\d+\.doubanio\.com/g, "img3.doubanio.com");
+    case "cmliussss-cdn-tencent":
       return originalUrl.replace(
         /img\d+\.doubanio\.com/g,
-        'img.doubanio.cmliussss.net'
+        "img.doubanio.cmliussss.net",
       );
-    case 'cmliussss-cdn-ali':
+    case "cmliussss-cdn-ali":
       return originalUrl.replace(
         /img\d+\.doubanio\.com/g,
-        'img.doubanio.cmliussss.com'
+        "img.doubanio.cmliussss.com",
       );
-    case 'custom':
+    case "custom":
       return `${proxyUrl}${encodeURIComponent(originalUrl)}`;
-    case 'direct':
+    case "direct":
     default:
       return originalUrl;
   }
@@ -74,16 +85,16 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
   try {
     // 直接使用m3u8 URL作为视频源，避免CORS问题
     return new Promise((resolve, reject) => {
-      const video = document.createElement('video');
+      const video = document.createElement("video");
       video.muted = true;
-      video.preload = 'metadata';
+      video.preload = "metadata";
 
       // 测量网络延迟（ping时间） - 使用m3u8 URL而不是ts文件
       const pingStart = performance.now();
       let pingTime = 0;
 
       // 测量ping时间（使用m3u8 URL）
-      fetch(m3u8Url, { method: 'HEAD', mode: 'no-cors' })
+      fetch(m3u8Url, { method: "HEAD", mode: "no-cors" })
         .then(() => {
           pingTime = performance.now() - pingStart;
         })
@@ -98,17 +109,17 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
       const timeout = setTimeout(() => {
         hls.destroy();
         video.remove();
-        reject(new Error('Timeout loading video metadata'));
+        reject(new Error("Timeout loading video metadata"));
       }, 4000);
 
       video.onerror = () => {
         clearTimeout(timeout);
         hls.destroy();
         video.remove();
-        reject(new Error('Failed to load video metadata'));
+        reject(new Error("Failed to load video metadata"));
       };
 
-      let actualLoadSpeed = '未知';
+      let actualLoadSpeed = "未知";
       let hasSpeedCalculated = false;
       let hasMetadataLoaded = false;
 
@@ -118,7 +129,7 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
       const checkAndResolve = () => {
         if (
           hasMetadataLoaded &&
-          (hasSpeedCalculated || actualLoadSpeed !== '未知')
+          (hasSpeedCalculated || actualLoadSpeed !== "未知")
         ) {
           clearTimeout(timeout);
           const width = video.videoWidth;
@@ -129,16 +140,16 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
             // 根据视频宽度判断视频质量等级，使用经典分辨率的宽度作为分割点
             const quality =
               width >= 3840
-                ? '4K' // 4K: 3840x2160
+                ? "4K" // 4K: 3840x2160
                 : width >= 2560
-                  ? '2K' // 2K: 2560x1440
-                  : width >= 1920
-                    ? '1080p' // 1080p: 1920x1080
-                    : width >= 1280
-                      ? '720p' // 720p: 1280x720
-                      : width >= 854
-                        ? '480p'
-                        : 'SD'; // 480p: 854x480
+                ? "2K" // 2K: 2560x1440
+                : width >= 1920
+                ? "1080p" // 1080p: 1920x1080
+                : width >= 1280
+                ? "720p" // 720p: 1280x720
+                : width >= 854
+                ? "480p"
+                : "SD"; // 480p: 854x480
 
             resolve({
               quality,
@@ -148,7 +159,7 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
           } else {
             // webkit 无法获取尺寸，直接返回
             resolve({
-              quality: '未知',
+              quality: "未知",
               loadSpeed: actualLoadSpeed,
               pingTime: Math.round(pingTime),
             });
@@ -194,7 +205,7 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
 
       // 监听hls.js错误
       hls.on(Hls.Events.ERROR, (event: any, data: any) => {
-        console.error('HLS错误:', data);
+        console.error("HLS错误:", data);
         if (data.fatal) {
           clearTimeout(timeout);
           hls.destroy();
@@ -211,20 +222,21 @@ export async function getVideoResolutionFromM3u8(m3u8Url: string): Promise<{
     });
   } catch (error) {
     throw new Error(
-      `Error getting video resolution: ${error instanceof Error ? error.message : String(error)
-      }`
+      `Error getting video resolution: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
     );
   }
 }
 
 export function cleanHtmlTags(text: string): string {
-  if (!text) return '';
+  if (!text) return "";
 
   const cleanedText = text
-    .replace(/<[^>]+>/g, '\n') // 将 HTML 标签替换为换行
-    .replace(/\n+/g, '\n') // 将多个连续换行合并为一个
-    .replace(/[ \t]+/g, ' ') // 将多个连续空格和制表符合并为一个空格，但保留换行符
-    .replace(/^\n+|\n+$/g, '') // 去掉首尾换行
+    .replace(/<[^>]+>/g, "\n") // 将 HTML 标签替换为换行
+    .replace(/\n+/g, "\n") // 将多个连续换行合并为一个
+    .replace(/[ \t]+/g, " ") // 将多个连续空格和制表符合并为一个空格，但保留换行符
+    .replace(/^\n+|\n+$/g, "") // 去掉首尾换行
     .trim(); // 去掉首尾空格
 
   // 使用 he 库解码 HTML 实体

@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 interface ScrollableRowProps {
   children: React.ReactNode;
@@ -35,7 +35,7 @@ export default function ScrollableRow({
     checkScroll();
 
     // 监听窗口大小变化
-    window.addEventListener('resize', checkScroll);
+    window.addEventListener("resize", checkScroll);
 
     // 创建一个 ResizeObserver 来监听容器大小变化
     const resizeObserver = new ResizeObserver(() => {
@@ -48,7 +48,7 @@ export default function ScrollableRow({
     }
 
     return () => {
-      window.removeEventListener('resize', checkScroll);
+      window.removeEventListener("resize", checkScroll);
       resizeObserver.disconnect();
     };
   }, [children]); // 依赖 children，当子组件变化时重新检查
@@ -65,7 +65,7 @@ export default function ScrollableRow({
         childList: true,
         subtree: true,
         attributes: true,
-        attributeFilter: ['style', 'class'],
+        attributeFilter: ["style", "class"],
       });
 
       return () => observer.disconnect();
@@ -76,7 +76,7 @@ export default function ScrollableRow({
     if (containerRef.current) {
       containerRef.current.scrollBy({
         left: scrollDistance,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
   };
@@ -85,14 +85,14 @@ export default function ScrollableRow({
     if (containerRef.current) {
       containerRef.current.scrollBy({
         left: -scrollDistance,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
   };
 
   return (
     <div
-      className='relative'
+      className="relative"
       onMouseEnter={() => {
         setIsHovered(true);
         // 当鼠标进入时重新检查一次
@@ -102,7 +102,7 @@ export default function ScrollableRow({
     >
       <div
         ref={containerRef}
-        className='flex space-x-6 overflow-x-auto scrollbar-hide py-1 sm:py-2 pb-12 sm:pb-14 px-4 sm:px-6'
+        className="flex space-x-6 overflow-x-auto scrollbar-hide py-1 sm:py-2 pb-12 sm:pb-14 px-4 sm:px-6"
         onScroll={checkScroll}
       >
         {children}
@@ -110,27 +110,27 @@ export default function ScrollableRow({
       {showLeftScroll && (
         <div
           className={`hidden sm:flex absolute left-0 top-0 bottom-0 w-16 items-center justify-center z-[600] transition-opacity duration-200 ${
-            isHovered ? 'opacity-100' : 'opacity-0'
+            isHovered ? "opacity-100" : "opacity-0"
           }`}
           style={{
-            background: 'transparent',
-            pointerEvents: 'none', // 允许点击穿透
+            background: "transparent",
+            pointerEvents: "none", // 允许点击穿透
           }}
         >
           <div
-            className='absolute inset-0 flex items-center justify-center'
+            className="absolute inset-0 flex items-center justify-center"
             style={{
-              top: '40%',
-              bottom: '60%',
-              left: '-4.5rem',
-              pointerEvents: 'auto',
+              top: "40%",
+              bottom: "60%",
+              left: "-4.5rem",
+              pointerEvents: "auto",
             }}
           >
             <button
               onClick={handleScrollLeftClick}
-              className='w-12 h-12 bg-white/95 rounded-full shadow-lg flex items-center justify-center hover:bg-white border border-gray-200 transition-transform hover:scale-105 dark:bg-gray-800/90 dark:hover:bg-gray-700 dark:border-gray-600'
+              className="w-12 h-12 bg-white/95 rounded-full shadow-lg flex items-center justify-center hover:bg-white border border-gray-200 transition-transform hover:scale-105 dark:bg-gray-800/90 dark:hover:bg-gray-700 dark:border-gray-600"
             >
-              <ChevronLeft className='w-6 h-6 text-gray-600 dark:text-gray-300' />
+              <ChevronLeft className="w-6 h-6 text-gray-600 dark:text-gray-300" />
             </button>
           </div>
         </div>
@@ -139,27 +139,27 @@ export default function ScrollableRow({
       {showRightScroll && (
         <div
           className={`hidden sm:flex absolute right-0 top-0 bottom-0 w-16 items-center justify-center z-[600] transition-opacity duration-200 ${
-            isHovered ? 'opacity-100' : 'opacity-0'
+            isHovered ? "opacity-100" : "opacity-0"
           }`}
           style={{
-            background: 'transparent',
-            pointerEvents: 'none', // 允许点击穿透
+            background: "transparent",
+            pointerEvents: "none", // 允许点击穿透
           }}
         >
           <div
-            className='absolute inset-0 flex items-center justify-center'
+            className="absolute inset-0 flex items-center justify-center"
             style={{
-              top: '40%',
-              bottom: '60%',
-              right: '-4.5rem',
-              pointerEvents: 'auto',
+              top: "40%",
+              bottom: "60%",
+              right: "-4.5rem",
+              pointerEvents: "auto",
             }}
           >
             <button
               onClick={handleScrollRightClick}
-              className='w-12 h-12 bg-white/95 rounded-full shadow-lg flex items-center justify-center hover:bg-white border border-gray-200 transition-transform hover:scale-105 dark:bg-gray-800/90 dark:hover:bg-gray-700 dark:border-gray-600'
+              className="w-12 h-12 bg-white/95 rounded-full shadow-lg flex items-center justify-center hover:bg-white border border-gray-200 transition-transform hover:scale-105 dark:bg-gray-800/90 dark:hover:bg-gray-700 dark:border-gray-600"
             >
-              <ChevronRight className='w-6 h-6 text-gray-600 dark:text-gray-300' />
+              <ChevronRight className="w-6 h-6 text-gray-600 dark:text-gray-300" />
             </button>
           </div>
         </div>

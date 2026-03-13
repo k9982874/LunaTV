@@ -1,11 +1,21 @@
 /* eslint-disable no-console, @typescript-eslint/no-explicit-any, @typescript-eslint/no-non-null-assertion */
 
-import Database from 'better-sqlite3';
-import fs from 'fs';
-import path from 'path';
+import Database from "better-sqlite3";
+import fs from "fs";
+import path from "path";
 
-import { AdminConfig } from '../admin.types';
-import { ApiSource, Category, Favorite, IStorage, LiveSource, PlayRecord, SkipConfig, User, UserGroup } from '../types';
+import { AdminConfig } from "../admin.types";
+import {
+  ApiSource,
+  Category,
+  Favorite,
+  IStorage,
+  LiveSource,
+  PlayRecord,
+  SkipConfig,
+  User,
+  UserGroup,
+} from "../types";
 
 // 搜索历史最大条数
 const SEARCH_HISTORY_LIMIT = 20;
@@ -21,12 +31,12 @@ function getDatabasePath(): string {
     return dbPath;
   }
   // 默认路径：项目根目录下的 data 文件夹
-  return path.join(process.cwd(), 'data', 'lunatv.db');
+  return path.join(process.cwd(), "data", "lunatv.db");
 }
 
 // 创建数据库连接（单例）
 function getSqliteDatabase(): Database.Database {
-  const globalKey = Symbol.for('__MOONTV_SQLITE_DB__');
+  const globalKey = Symbol.for("__MOONTV_SQLITE_DB__");
   let db: Database.Database | undefined = (global as any)[globalKey];
 
   if (!db) {
@@ -44,17 +54,17 @@ function getSqliteDatabase(): Database.Database {
     db = new Database(dbPath);
 
     // 启用 WAL 模式以提高并发性能
-    db.pragma('journal_mode = WAL');
+    db.pragma("journal_mode = WAL");
 
     // 启用外键约束
-    db.pragma('foreign_keys = ON');
+    db.pragma("foreign_keys = ON");
 
     // 初始化表结构
     if (!initialized) {
       initializeTables(db);
     }
 
-    console.log('SQLite database connected successfully');
+    console.log("SQLite database connected successfully");
 
     (global as any)[globalKey] = db;
   }
@@ -194,29 +204,26 @@ function initializeTables(db: Database.Database): void {
     INSERT INTO users (username, password, role, banned)
     VALUES (?, ?, ?, ?)
   `);
-  stmt.run(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD, 'owner', 0);
+  stmt.run(process.env.ADMIN_USERNAME, process.env.ADMIN_PASSWORD, "owner", 0);
 }
 
 // 添加 SQLite 操作重试包装器
-async function withRetry<T>(
-  operation: () => T,
-  maxRetries = 3
-): Promise<T> {
+async function withRetry<T>(operation: () => T, maxRetries = 3): Promise<T> {
   for (let i = 0; i < maxRetries; i++) {
     try {
       return operation();
     } catch (err: any) {
       const isLastAttempt = i === maxRetries - 1;
       const isLockError =
-        err.code === 'SQLITE_BUSY' ||
-        err.code === 'SQLITE_LOCKED' ||
-        err.message?.includes('database is locked');
+        err.code === "SQLITE_BUSY" ||
+        err.code === "SQLITE_LOCKED" ||
+        err.message?.includes("database is locked");
 
       if (isLockError && !isLastAttempt) {
         console.log(
-          `SQLite operation failed, retrying... (${i + 1}/${maxRetries})`
+          `SQLite operation failed, retrying... (${i + 1}/${maxRetries})`,
         );
-        console.error('Error:', err.message);
+        console.error("Error:", err.message);
 
         // 等待一段时间后重试（指数退避）
         await new Promise((resolve) => setTimeout(resolve, 100 * (i + 1)));
@@ -227,7 +234,7 @@ async function withRetry<T>(
     }
   }
 
-  throw new Error('Max retries exceeded');
+  throw new Error("Max retries exceeded");
 }
 
 export class SqliteStorage implements IStorage {
@@ -240,11 +247,11 @@ export class SqliteStorage implements IStorage {
   // ---------- 播放记录 ----------
   async getPlayRecord(
     userName: string,
-    key: string
+    key: string,
   ): Promise<PlayRecord | null> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT data FROM play_records WHERE username = ? AND record_key = ?'
+        "SELECT data FROM play_records WHERE username = ? AND record_key = ?",
       );
       const row = stmt.get(userName, key) as { data: string } | undefined;
       return row ? (JSON.parse(row.data) as PlayRecord) : null;
@@ -254,7 +261,7 @@ export class SqliteStorage implements IStorage {
   async setPlayRecord(
     userName: string,
     key: string,
-    record: PlayRecord
+    record: PlayRecord,
   ): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(`
@@ -266,13 +273,16 @@ export class SqliteStorage implements IStorage {
   }
 
   async getAllPlayRecords(
-    userName: string
+    userName: string,
   ): Promise<Record<string, PlayRecord>> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT record_key, data FROM play_records WHERE username = ?'
+        "SELECT record_key, data FROM play_records WHERE username = ?",
       );
-      const rows = stmt.all(userName) as Array<{ record_key: string; data: string }>;
+      const rows = stmt.all(userName) as Array<{
+        record_key: string;
+        data: string;
+      }>;
       const result: Record<string, PlayRecord> = {};
       rows.forEach((row) => {
         result[String(row.record_key)] = JSON.parse(row.data) as PlayRecord;
@@ -284,7 +294,7 @@ export class SqliteStorage implements IStorage {
   async deletePlayRecord(userName: string, key: string): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(
-        'DELETE FROM play_records WHERE username = ? AND record_key = ?'
+        "DELETE FROM play_records WHERE username = ? AND record_key = ?",
       );
       stmt.run(userName, key);
     });
@@ -294,7 +304,7 @@ export class SqliteStorage implements IStorage {
   async getFavorite(userName: string, key: string): Promise<Favorite | null> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT data FROM favorites WHERE username = ? AND favorite_key = ?'
+        "SELECT data FROM favorites WHERE username = ? AND favorite_key = ?",
       );
       const row = stmt.get(userName, key) as { data: string } | undefined;
       return row ? (JSON.parse(row.data) as Favorite) : null;
@@ -304,7 +314,7 @@ export class SqliteStorage implements IStorage {
   async setFavorite(
     userName: string,
     key: string,
-    favorite: Favorite
+    favorite: Favorite,
   ): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(`
@@ -318,9 +328,12 @@ export class SqliteStorage implements IStorage {
   async getAllFavorites(userName: string): Promise<Record<string, Favorite>> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT favorite_key, data FROM favorites WHERE username = ?'
+        "SELECT favorite_key, data FROM favorites WHERE username = ?",
       );
-      const rows = stmt.all(userName) as Array<{ favorite_key: string; data: string }>;
+      const rows = stmt.all(userName) as Array<{
+        favorite_key: string;
+        data: string;
+      }>;
       const result: Record<string, Favorite> = {};
       rows.forEach((row) => {
         result[String(row.favorite_key)] = JSON.parse(row.data) as Favorite;
@@ -332,7 +345,7 @@ export class SqliteStorage implements IStorage {
   async deleteFavorite(userName: string, key: string): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(
-        'DELETE FROM favorites WHERE username = ? AND favorite_key = ?'
+        "DELETE FROM favorites WHERE username = ? AND favorite_key = ?",
       );
       stmt.run(userName, key);
     });
@@ -342,16 +355,16 @@ export class SqliteStorage implements IStorage {
   async registerUser(userName: string, password: string): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(
-        'INSERT INTO users (username, password, role, banned) VALUES (?, ?, ?, ?)'
+        "INSERT INTO users (username, password, role, banned) VALUES (?, ?, ?, ?)",
       );
-      stmt.run(userName, password, 'user', 0);
+      stmt.run(userName, password, "user", 0);
     });
   }
 
   async verifyUser(userName: string, password: string): Promise<boolean> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT password FROM users WHERE username = ?'
+        "SELECT password FROM users WHERE username = ?",
       );
       const row = stmt.get(userName) as { password: string } | undefined;
       if (!row) return false;
@@ -363,7 +376,7 @@ export class SqliteStorage implements IStorage {
   async checkUserExist(userName: string): Promise<boolean> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT 1 FROM users WHERE username = ? LIMIT 1'
+        "SELECT 1 FROM users WHERE username = ? LIMIT 1",
       );
       const row = stmt.get(userName);
       return row !== undefined;
@@ -374,7 +387,7 @@ export class SqliteStorage implements IStorage {
   async changePassword(userName: string, newPassword: string): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(
-        'UPDATE users SET password = ? WHERE username = ?'
+        "UPDATE users SET password = ? WHERE username = ?",
       );
       stmt.run(newPassword, userName);
     });
@@ -383,7 +396,7 @@ export class SqliteStorage implements IStorage {
   // 删除用户及其所有数据（通过外键级联删除）
   async deleteUser(userName: string): Promise<void> {
     await withRetry(() => {
-      const stmt = this.db.prepare('DELETE FROM users WHERE username = ?');
+      const stmt = this.db.prepare("DELETE FROM users WHERE username = ?");
       stmt.run(userName);
       // 由于设置了外键级联删除，相关数据会自动删除
     });
@@ -398,7 +411,9 @@ export class SqliteStorage implements IStorage {
         ORDER BY created_at DESC
         LIMIT ?
       `);
-      const rows = stmt.all(userName, SEARCH_HISTORY_LIMIT) as Array<{ keyword: string }>;
+      const rows = stmt.all(userName, SEARCH_HISTORY_LIMIT) as Array<{
+        keyword: string;
+      }>;
       return StringArray(rows.map((row) => row.keyword));
     });
   }
@@ -407,7 +422,7 @@ export class SqliteStorage implements IStorage {
     await withRetry(() => {
       // 先删除相同的关键词
       const deleteStmt = this.db.prepare(
-        'DELETE FROM search_history WHERE username = ? AND keyword = ?'
+        "DELETE FROM search_history WHERE username = ? AND keyword = ?",
       );
       deleteStmt.run(userName, String(keyword));
 
@@ -436,12 +451,12 @@ export class SqliteStorage implements IStorage {
     await withRetry(() => {
       if (keyword) {
         const stmt = this.db.prepare(
-          'DELETE FROM search_history WHERE username = ? AND keyword = ?'
+          "DELETE FROM search_history WHERE username = ? AND keyword = ?",
         );
         stmt.run(userName, String(keyword));
       } else {
         const stmt = this.db.prepare(
-          'DELETE FROM search_history WHERE username = ?'
+          "DELETE FROM search_history WHERE username = ?",
         );
         stmt.run(userName);
       }
@@ -449,10 +464,12 @@ export class SqliteStorage implements IStorage {
   }
 
   // ---------- 获取全部用户 ----------
-  async getAllUsers(withPassword?: boolean): Promise<(User & { password?: string })[]> {
+  async getAllUsers(
+    withPassword?: boolean,
+  ): Promise<(User & { password?: string })[]> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT username, password, role, banned, tags, enabled_apis FROM users',
+        "SELECT username, password, role, banned, tags, enabled_apis FROM users",
       );
       const rows = stmt.all() as {
         username: string;
@@ -466,7 +483,7 @@ export class SqliteStorage implements IStorage {
         const result: User & { password?: string } = {
           username: String(row.username),
           password: withPassword ? String(row.password) : undefined,
-          role: (row.role || 'user') as 'user' | 'admin' | 'owner',
+          role: (row.role || "user") as "user" | "admin" | "owner",
           banned: Boolean(row.banned),
           tags: [],
           enabledApis: [],
@@ -479,7 +496,7 @@ export class SqliteStorage implements IStorage {
             result.enabledApis = JSON.parse(row.enabled_apis) as string[];
           }
         } catch (e) {
-          console.warn('解析用户组失败:', e);
+          console.warn("解析用户组失败:", e);
         }
         return result;
       });
@@ -497,11 +514,11 @@ export class SqliteStorage implements IStorage {
 
       for (const user of users) {
         updateUserStmt.run(
-          user.role || 'user',
+          user.role || "user",
           user.banned ? 1 : 0,
           JSON.stringify(user.tags || []),
           JSON.stringify(user.enabledApis || []),
-          user.username
+          user.username,
         );
       }
     });
@@ -510,9 +527,7 @@ export class SqliteStorage implements IStorage {
   // ---------- 获取全部用户组 ----------
   async getAllUserGroups(): Promise<UserGroup[]> {
     return withRetry(() => {
-      const stmt = this.db.prepare(
-        'SELECT name, value FROM user_groups',
-      );
+      const stmt = this.db.prepare("SELECT name, value FROM user_groups");
       const rows = stmt.all() as Array<{
         name: string;
         value: string;
@@ -525,7 +540,7 @@ export class SqliteStorage implements IStorage {
         try {
           result.enabledApis = JSON.parse(row.value) as string[];
         } catch (e) {
-          console.warn('解析用户组失败:', e);
+          console.warn("解析用户组失败:", e);
         }
         return result;
       });
@@ -533,10 +548,12 @@ export class SqliteStorage implements IStorage {
   }
 
   // ---------- 设置全部用户组 ----------
-  async setAllUserGroups(userGroups: Partial<{
-    name: string;
-    enabledApis: string[];
-  }>[]): Promise<void> {
+  async setAllUserGroups(
+    userGroups: Partial<{
+      name: string;
+      enabledApis: string[];
+    }>[],
+  ): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(`
         INSERT OR REPLACE INTO user_groups (name, value)
@@ -552,15 +569,24 @@ export class SqliteStorage implements IStorage {
   // ---------- 获取全部 API 源 ----------
   async getAllApiSources(): Promise<ApiSource[]> {
     return withRetry(() => {
-      const stmt = this.db.prepare('SELECT key, name, api, detail, from_source, disabled FROM api_sources');
-      const rows = stmt.all() as Array<{ key: string; name: string; api: string; detail: string; from_source: string; disabled: number }>;
+      const stmt = this.db.prepare(
+        "SELECT key, name, api, detail, from_source, disabled FROM api_sources",
+      );
+      const rows = stmt.all() as Array<{
+        key: string;
+        name: string;
+        api: string;
+        detail: string;
+        from_source: string;
+        disabled: number;
+      }>;
       return rows.map((row) => {
         return {
           key: String(row.key),
           name: String(row.name),
           api: String(row.api),
           detail: row.detail ? String(row.detail) : undefined,
-          from: String(row.from_source) as 'config' | 'custom',
+          from: String(row.from_source) as "config" | "custom",
           disabled: Boolean(row.disabled),
         };
       });
@@ -568,14 +594,16 @@ export class SqliteStorage implements IStorage {
   }
 
   // ---------- 设置全部 API 源 ----------
-  async setAllApiSources(apiSources: Partial<{
-    key: string;
-    name: string;
-    api: string;
-    detail: string;
-    from: 'config' | 'custom';
-    disabled: boolean;
-  }>[]): Promise<void> {
+  async setAllApiSources(
+    apiSources: Partial<{
+      key: string;
+      name: string;
+      api: string;
+      detail: string;
+      from: "config" | "custom";
+      disabled: boolean;
+    }>[],
+  ): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(`
         INSERT OR REPLACE INTO api_sources (key, name, api, detail, from_source, disabled)
@@ -598,7 +626,7 @@ export class SqliteStorage implements IStorage {
   async getAllLiveSources(): Promise<LiveSource[]> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT key, name, url, user_agent, epg, from_source, channel_number, disabled FROM live_sources',
+        "SELECT key, name, url, user_agent, epg, from_source, channel_number, disabled FROM live_sources",
       );
       const rows = stmt.all() as Array<{
         key: string;
@@ -608,7 +636,7 @@ export class SqliteStorage implements IStorage {
         epg: string;
         from_source: string;
         channel_number: number;
-        disabled: number
+        disabled: number;
       }>;
       return rows.map((row) => {
         return {
@@ -617,8 +645,10 @@ export class SqliteStorage implements IStorage {
           url: String(row.url),
           ua: row.user_agent ? String(row.user_agent) : undefined,
           epg: row.epg ? String(row.epg) : undefined,
-          from: String(row.from_source) as 'config' | 'custom',
-          channelNumber: row.channel_number ? Number(row.channel_number) : undefined,
+          from: String(row.from_source) as "config" | "custom",
+          channelNumber: row.channel_number
+            ? Number(row.channel_number)
+            : undefined,
           disabled: Boolean(row.disabled),
         };
       });
@@ -626,16 +656,18 @@ export class SqliteStorage implements IStorage {
   }
 
   // ---------- 设置全部直播源 ----------
-  async setAllLiveSources(liveSources: Partial<{
-    key: string;
-    name: string;
-    url: string;
-    ua: string;
-    epg: string;
-    from: 'config' | 'custom';
-    channelNumber: number;
-    disabled: boolean;
-  }>[]): Promise<void> {
+  async setAllLiveSources(
+    liveSources: Partial<{
+      key: string;
+      name: string;
+      url: string;
+      ua: string;
+      epg: string;
+      from: "config" | "custom";
+      channelNumber: number;
+      disabled: boolean;
+    }>[],
+  ): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(`
         INSERT OR REPLACE INTO live_sources (key, name, url, user_agent, epg, from_source, channel_number, disabled)
@@ -660,7 +692,7 @@ export class SqliteStorage implements IStorage {
   async getAllCategories(): Promise<Category[]> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT query, type, name, from_source, disabled FROM categories',
+        "SELECT query, type, name, from_source, disabled FROM categories",
       );
       const rows = stmt.all() as Array<{
         query: string;
@@ -672,9 +704,9 @@ export class SqliteStorage implements IStorage {
       return rows.map((row) => {
         return {
           query: String(row.query),
-          type: String(row.type) as 'movie' | 'tv',
+          type: String(row.type) as "movie" | "tv",
           name: row.name ? String(row.name) : undefined,
-          from: String(row.from_source) as 'config' | 'custom',
+          from: String(row.from_source) as "config" | "custom",
           disabled: Boolean(row.disabled),
         };
       });
@@ -682,13 +714,15 @@ export class SqliteStorage implements IStorage {
   }
 
   // ---------- 设置全部分类 ----------
-  async setAllCategories(categories: Partial<{
-    query: string;
-    type: 'movie' | 'tv';
-    name: string;
-    from: 'config' | 'custom';
-    disabled: boolean;
-  }>[]): Promise<void> {
+  async setAllCategories(
+    categories: Partial<{
+      query: string;
+      type: "movie" | "tv";
+      name: string;
+      from: "config" | "custom";
+      disabled: boolean;
+    }>[],
+  ): Promise<void> {
     await withRetry(() => {
       const stmt = this.db.prepare(`
         INSERT OR REPLACE INTO categories (query, type, name, from_source, disabled)
@@ -709,7 +743,7 @@ export class SqliteStorage implements IStorage {
   // ---------- 管理员配置 ----------
   async getAdminConfig(): Promise<AdminConfig | null> {
     return withRetry(async () => {
-      const stmt = this.db.prepare('SELECT name, value FROM admin_config');
+      const stmt = this.db.prepare("SELECT name, value FROM admin_config");
       const rows = stmt.all() as Array<{ name: string; value: string }>;
       if (!rows) {
         return null;
@@ -717,32 +751,33 @@ export class SqliteStorage implements IStorage {
 
       const config = {
         ConfigSubscribtion: {
-          URL: '',
+          URL: "",
           AutoUpdate: false,
-          LastCheck: '',
+          LastCheck: "",
         },
-        ConfigFile: '',
+        ConfigFile: "",
         UserConfig: {
           Users: [],
         },
         SiteConfig: {
-          SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'LunaTV',
+          SiteName: process.env.NEXT_PUBLIC_SITE_NAME || "LunaTV",
           Announcement:
             process.env.ANNOUNCEMENT ||
-            '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。',
+            "本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。",
           SearchDownstreamMaxPage:
             Number(process.env.NEXT_PUBLIC_SEARCH_MAX_PAGE) || 5,
           SiteInterfaceCacheTime: 7200,
           DoubanProxyType:
-            process.env.NEXT_PUBLIC_DOUBAN_PROXY_TYPE || 'cmliussss-cdn-tencent',
-          DoubanProxy: process.env.NEXT_PUBLIC_DOUBAN_PROXY || '',
+            process.env.NEXT_PUBLIC_DOUBAN_PROXY_TYPE ||
+            "cmliussss-cdn-tencent",
+          DoubanProxy: process.env.NEXT_PUBLIC_DOUBAN_PROXY || "",
           DoubanImageProxyType:
-            process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE || 'cmliussss-cdn-tencent',
-          DoubanImageProxy: process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY || '',
+            process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE ||
+            "cmliussss-cdn-tencent",
+          DoubanImageProxy: process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY || "",
           DisableYellowFilter:
-            process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === 'true',
-          FluidSearch:
-            process.env.NEXT_PUBLIC_FLUID_SEARCH !== 'false',
+            process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === "true",
+          FluidSearch: process.env.NEXT_PUBLIC_FLUID_SEARCH !== "false",
         },
         SourceConfig: [],
         CustomCategories: [],
@@ -751,22 +786,22 @@ export class SqliteStorage implements IStorage {
 
       try {
         rows.forEach((row) => {
-          if (row.name === 'config_file') {
+          if (row.name === "config_file") {
             config.ConfigFile = row.value;
-          } else if (row.name === 'config_subscription') {
+          } else if (row.name === "config_subscription") {
             config.ConfigSubscribtion = JSON.parse(row.value);
-          } else if (row.name === 'site_config') {
+          } else if (row.name === "site_config") {
             config.SiteConfig = JSON.parse(row.value);
-          } else if (row.name === 'source_config') {
+          } else if (row.name === "source_config") {
             config.SourceConfig = JSON.parse(row.value);
-          } else if (row.name === 'custom_categories') {
+          } else if (row.name === "custom_categories") {
             config.CustomCategories = JSON.parse(row.value);
-          } else if (row.name === 'live_config') {
+          } else if (row.name === "live_config") {
             config.LiveConfig = JSON.parse(row.value);
           }
         });
       } catch (e) {
-        console.error('解析管理员配置失败:', e);
+        console.error("解析管理员配置失败:", e);
         return null;
       }
 
@@ -797,7 +832,7 @@ export class SqliteStorage implements IStorage {
           INSERT OR REPLACE INTO admin_config (name, value)
           VALUES (?, ?)
         `);
-        stmt.run('config_file', config.ConfigFile);
+        stmt.run("config_file", config.ConfigFile);
       }
 
       if (config.ConfigSubscribtion) {
@@ -806,7 +841,7 @@ export class SqliteStorage implements IStorage {
           INSERT OR REPLACE INTO admin_config (name, value)
           VALUES (?, ?)
         `);
-        stmt.run('config_subscription', data);
+        stmt.run("config_subscription", data);
       }
 
       if (config.SiteConfig) {
@@ -815,7 +850,7 @@ export class SqliteStorage implements IStorage {
           INSERT OR REPLACE INTO admin_config (name, value)
           VALUES (?, ?)
         `);
-        stmt.run('site_config', data);
+        stmt.run("site_config", data);
       }
 
       // 同步更新 users 表中的 role 和 banned 字段
@@ -850,12 +885,12 @@ export class SqliteStorage implements IStorage {
   async getSkipConfig(
     userName: string,
     source: string,
-    id: string
+    id: string,
   ): Promise<SkipConfig | null> {
     const key = this.skipConfigKey(source, id);
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT data FROM skip_configs WHERE username = ? AND config_key = ?'
+        "SELECT data FROM skip_configs WHERE username = ? AND config_key = ?",
       );
       const row = stmt.get(userName, key) as { data: string } | undefined;
       return row ? (JSON.parse(row.data) as SkipConfig) : null;
@@ -866,7 +901,7 @@ export class SqliteStorage implements IStorage {
     userName: string,
     source: string,
     id: string,
-    config: SkipConfig
+    config: SkipConfig,
   ): Promise<void> {
     const key = this.skipConfigKey(source, id);
     await withRetry(() => {
@@ -881,25 +916,28 @@ export class SqliteStorage implements IStorage {
   async deleteSkipConfig(
     userName: string,
     source: string,
-    id: string
+    id: string,
   ): Promise<void> {
     const key = this.skipConfigKey(source, id);
     await withRetry(() => {
       const stmt = this.db.prepare(
-        'DELETE FROM skip_configs WHERE username = ? AND config_key = ?'
+        "DELETE FROM skip_configs WHERE username = ? AND config_key = ?",
       );
       stmt.run(userName, key);
     });
   }
 
   async getAllSkipConfigs(
-    userName: string
+    userName: string,
   ): Promise<{ [key: string]: SkipConfig }> {
     return withRetry(() => {
       const stmt = this.db.prepare(
-        'SELECT config_key, data FROM skip_configs WHERE username = ?'
+        "SELECT config_key, data FROM skip_configs WHERE username = ?",
       );
-      const rows = stmt.all(userName) as Array<{ config_key: string; data: string }>;
+      const rows = stmt.all(userName) as Array<{
+        config_key: string;
+        data: string;
+      }>;
       const configs: { [key: string]: SkipConfig } = {};
       rows.forEach((row) => {
         configs[String(row.config_key)] = JSON.parse(row.data) as SkipConfig;
@@ -919,11 +957,10 @@ export class SqliteStorage implements IStorage {
         `);
       });
 
-      console.log('所有数据已清空');
+      console.log("所有数据已清空");
     } catch (error) {
-      console.error('清空数据失败:', error);
-      throw new Error('清空数据失败');
+      console.error("清空数据失败:", error);
+      throw new Error("清空数据失败");
     }
   }
 }
-

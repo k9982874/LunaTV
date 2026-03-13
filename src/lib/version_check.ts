@@ -1,19 +1,19 @@
 /* eslint-disable no-console */
 
-'use client';
+"use client";
 
 import { CURRENT_VERSION } from "@/lib/version";
 
 // 版本检查结果枚举
 export enum UpdateStatus {
-  HAS_UPDATE = 'has_update', // 有新版本
-  NO_UPDATE = 'no_update', // 无新版本
-  FETCH_FAILED = 'fetch_failed', // 获取失败
+  HAS_UPDATE = "has_update", // 有新版本
+  NO_UPDATE = "no_update", // 无新版本
+  FETCH_FAILED = "fetch_failed", // 获取失败
 }
 
 // 远程版本检查URL配置
 const VERSION_CHECK_URLS = [
-  'https://raw.githubusercontent.com/MoonTechLab/LunaTV/main/VERSION.txt',
+  "https://raw.githubusercontent.com/MoonTechLab/LunaTV/main/VERSION.txt",
 ];
 
 /**
@@ -37,7 +37,7 @@ export async function checkForUpdates(): Promise<UpdateStatus> {
     // 如果两个URL都失败，返回获取失败状态
     return UpdateStatus.FETCH_FAILED;
   } catch (error) {
-    console.error('版本检查失败:', error);
+    console.error("版本检查失败:", error);
     return UpdateStatus.FETCH_FAILED;
   }
 }
@@ -54,15 +54,15 @@ async function fetchVersionFromUrl(url: string): Promise<string | null> {
 
     // 添加时间戳参数以避免缓存
     const timestamp = Date.now();
-    const urlWithTimestamp = url.includes('?')
+    const urlWithTimestamp = url.includes("?")
       ? `${url}&_t=${timestamp}`
       : `${url}?_t=${timestamp}`;
 
     const response = await fetch(urlWithTimestamp, {
-      method: 'GET',
+      method: "GET",
       signal: controller.signal,
       headers: {
-        'Content-Type': 'text/plain',
+        "Content-Type": "text/plain",
       },
     });
 
@@ -93,7 +93,7 @@ export function compareVersions(remoteVersion: string): UpdateStatus {
 
   try {
     // 解析版本号为数字数组 [X, Y, Z]
-    const currentParts = CURRENT_VERSION.split('.').map((part) => {
+    const currentParts = CURRENT_VERSION.split(".").map((part) => {
       const num = parseInt(part, 10);
       if (isNaN(num) || num < 0) {
         throw new Error(`无效的版本号格式: ${CURRENT_VERSION}`);
@@ -101,7 +101,7 @@ export function compareVersions(remoteVersion: string): UpdateStatus {
       return num;
     });
 
-    const remoteParts = remoteVersion.split('.').map((part) => {
+    const remoteParts = remoteVersion.split(".").map((part) => {
       const num = parseInt(part, 10);
       if (isNaN(num) || num < 0) {
         throw new Error(`无效的版本号格式: ${remoteVersion}`);
@@ -139,7 +139,7 @@ export function compareVersions(remoteVersion: string): UpdateStatus {
     // 所有级别都相等，无需更新
     return UpdateStatus.NO_UPDATE;
   } catch (error) {
-    console.error('版本号比较失败:', error);
+    console.error("版本号比较失败:", error);
     // 如果版本号格式无效，回退到字符串比较
     return remoteVersion !== CURRENT_VERSION
       ? UpdateStatus.HAS_UPDATE

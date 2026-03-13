@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment, @typescript-eslint/no-explicit-any, react-hooks/exhaustive-deps, no-console, @next/next/no-img-element */
 
-'use client';
+"use client";
 
-import Artplayer from 'artplayer';
-import Hls from 'hls.js';
-import { Heart, Radio, Tv } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useRef, useState } from 'react';
+import Artplayer from "artplayer";
+import Hls from "hls.js";
+import { Heart, Radio, Tv } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 
 import {
   deleteFavorite,
@@ -14,11 +14,11 @@ import {
   isFavorited as checkIsFavorited,
   saveFavorite,
   subscribeToDataUpdates,
-} from '@/lib/db.client';
-import { parseCustomTimeFormat } from '@/lib/time';
+} from "@/lib/db.client";
+import { parseCustomTimeFormat } from "@/lib/time";
 
-import EpgScrollableRow from '@/components/EpgScrollableRow';
-import PageLayout from '@/components/PageLayout';
+import EpgScrollableRow from "@/components/EpgScrollableRow";
+import PageLayout from "@/components/PageLayout";
 
 // 扩展 HTMLVideoElement 类型以支持 hls 属性
 declare global {
@@ -41,10 +41,10 @@ interface LiveChannel {
 interface LiveSource {
   key: string;
   name: string;
-  url: string;  // m3u 地址
+  url: string; // m3u 地址
   ua?: string;
   epg?: string; // 节目单
-  from: 'config' | 'custom';
+  from: "config" | "custom";
   channelNumber?: number;
   disabled?: boolean;
 }
@@ -55,9 +55,9 @@ function LivePageClient() {
   // -----------------------------------------------------------------------------
   const [loading, setLoading] = useState(true);
   const [loadingStage, setLoadingStage] = useState<
-    'loading' | 'fetching' | 'ready'
-  >('loading');
-  const [loadingMessage, setLoadingMessage] = useState('正在加载直播源...');
+    "loading" | "fetching" | "ready"
+  >("loading");
+  const [loadingMessage, setLoadingMessage] = useState("正在加载直播源...");
   const [error, setError] = useState<string | null>(null);
 
   const searchParams = useSearchParams();
@@ -73,16 +73,18 @@ function LivePageClient() {
 
   // 频道相关
   const [currentChannels, setCurrentChannels] = useState<LiveChannel[]>([]);
-  const [currentChannel, setCurrentChannel] = useState<LiveChannel | null>(null);
+  const [currentChannel, setCurrentChannel] = useState<LiveChannel | null>(
+    null,
+  );
   useEffect(() => {
     currentChannelRef.current = currentChannel;
   }, [currentChannel]);
 
-  const [needLoadSource] = useState(searchParams.get('source'));
-  const [needLoadChannel] = useState(searchParams.get('id'));
+  const [needLoadSource] = useState(searchParams.get("source"));
+  const [needLoadChannel] = useState(searchParams.get("id"));
 
   // 播放器相关
-  const [videoUrl, setVideoUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState("");
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [unsupportedType, setUnsupportedType] = useState<string | null>(null);
 
@@ -90,11 +92,15 @@ function LivePageClient() {
   const [isSwitchingSource, setIsSwitchingSource] = useState(false);
 
   // 分组相关
-  const [groupedChannels, setGroupedChannels] = useState<{ [key: string]: LiveChannel[] }>({});
-  const [selectedGroup, setSelectedGroup] = useState<string>('');
+  const [groupedChannels, setGroupedChannels] = useState<{
+    [key: string]: LiveChannel[];
+  }>({});
+  const [selectedGroup, setSelectedGroup] = useState<string>("");
 
   // Tab 切换
-  const [activeTab, setActiveTab] = useState<'channels' | 'sources'>('channels');
+  const [activeTab, setActiveTab] = useState<"channels" | "sources">(
+    "channels",
+  );
 
   // 频道列表收起状态
   const [isChannelListCollapsed, setIsChannelListCollapsed] = useState(false);
@@ -123,22 +129,40 @@ function LivePageClient() {
   const currentChannelRef = useRef<LiveChannel | null>(null);
 
   // EPG数据清洗函数 - 去除重叠的节目，保留时间较短的，只显示今日节目
-  const cleanEpgData = (programs: Array<{ start: string; end: string; title: string }>) => {
+  const cleanEpgData = (
+    programs: Array<{ start: string; end: string; title: string }>,
+  ) => {
     if (!programs || programs.length === 0) return programs;
 
     // 获取今日日期（只考虑年月日，忽略时间）
     const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+    const todayStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate(),
+    );
+    const todayEnd = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 1,
+    );
 
     // 首先过滤出今日的节目（包括跨天节目）
-    const todayPrograms = programs.filter(program => {
+    const todayPrograms = programs.filter((program) => {
       const programStart = parseCustomTimeFormat(program.start);
       const programEnd = parseCustomTimeFormat(program.end);
 
       // 获取节目的日期范围
-      const programStartDate = new Date(programStart.getFullYear(), programStart.getMonth(), programStart.getDate());
-      const programEndDate = new Date(programEnd.getFullYear(), programEnd.getMonth(), programEnd.getDate());
+      const programStartDate = new Date(
+        programStart.getFullYear(),
+        programStart.getMonth(),
+        programStart.getDate(),
+      );
+      const programEndDate = new Date(
+        programEnd.getFullYear(),
+        programEnd.getMonth(),
+        programEnd.getDate(),
+      );
 
       // 如果节目的开始时间或结束时间在今天，或者节目跨越今天，都算作今天的节目
       return (
@@ -155,7 +179,11 @@ function LivePageClient() {
       return startA - startB;
     });
 
-    const cleanedPrograms: Array<{ start: string; end: string; title: string }> = [];
+    const cleanedPrograms: Array<{
+      start: string;
+      end: string;
+      title: string;
+    }> = [];
 
     for (let i = 0; i < sortedPrograms.length; i++) {
       const currentProgram = sortedPrograms[i];
@@ -197,8 +225,10 @@ function LivePageClient() {
             (currentStart <= existingStart && currentEnd >= existingEnd)
           ) {
             // 计算节目时长
-            const currentDuration = currentEnd.getTime() - currentStart.getTime();
-            const existingDuration = existingEnd.getTime() - existingStart.getTime();
+            const currentDuration =
+              currentEnd.getTime() - currentStart.getTime();
+            const existingDuration =
+              existingEnd.getTime() - existingStart.getTime();
 
             // 如果当前节目时间更短，则替换已存在的节目
             if (currentDuration < existingDuration) {
@@ -229,18 +259,18 @@ function LivePageClient() {
   // 获取直播源列表
   const fetchLiveSources = async () => {
     try {
-      setLoadingStage('fetching');
-      setLoadingMessage('正在获取直播源...');
+      setLoadingStage("fetching");
+      setLoadingMessage("正在获取直播源...");
 
       // 获取 AdminConfig 中的直播源信息
-      const response = await fetch('/api/live/sources');
+      const response = await fetch("/api/live/sources");
       if (!response.ok) {
-        throw new Error('获取直播源失败');
+        throw new Error("获取直播源失败");
       }
 
       const result = await response.json();
       if (!result.success) {
-        throw new Error(result.error || '获取直播源失败');
+        throw new Error(result.error || "获取直播源失败");
       }
 
       const sources = result.data;
@@ -250,7 +280,9 @@ function LivePageClient() {
         // 默认选中第一个源
         const firstSource = sources[0];
         if (needLoadSource) {
-          const foundSource = sources.find((s: LiveSource) => s.key === needLoadSource);
+          const foundSource = sources.find(
+            (s: LiveSource) => s.key === needLoadSource,
+          );
           if (foundSource) {
             setCurrentSource(foundSource);
             await fetchChannels(foundSource);
@@ -264,22 +296,22 @@ function LivePageClient() {
         }
       }
 
-      setLoadingStage('ready');
-      setLoadingMessage('✨ 准备就绪...');
+      setLoadingStage("ready");
+      setLoadingMessage("✨ 准备就绪...");
 
       setTimeout(() => {
         setLoading(false);
       }, 1000);
     } catch (err) {
-      console.error('获取直播源失败:', err);
+      console.error("获取直播源失败:", err);
       // 不设置错误，而是显示空状态
       setLiveSources([]);
       setLoading(false);
     } finally {
       // 移除 URL 搜索参数中的 source 和 id
       const newSearchParams = new URLSearchParams(searchParams.toString());
-      newSearchParams.delete('source');
-      newSearchParams.delete('id');
+      newSearchParams.delete("source");
+      newSearchParams.delete("id");
 
       const newUrl = newSearchParams.toString()
         ? `?${newSearchParams.toString()}`
@@ -297,12 +329,12 @@ function LivePageClient() {
       // 从 cachedLiveChannels 获取频道信息
       const response = await fetch(`/api/live/channels?source=${source.key}`);
       if (!response.ok) {
-        throw new Error('获取频道列表失败');
+        throw new Error("获取频道列表失败");
       }
 
       const result = await response.json();
       if (!result.success) {
-        throw new Error(result.error || '获取频道列表失败');
+        throw new Error(result.error || "获取频道列表失败");
       }
 
       const channelsData = result.data;
@@ -313,10 +345,10 @@ function LivePageClient() {
         setFilteredChannels([]);
 
         // 更新直播源的频道数为 0
-        setLiveSources(prevSources =>
-          prevSources.map(s =>
-            s.key === source.key ? { ...s, channelNumber: 0 } : s
-          )
+        setLiveSources((prevSources) =>
+          prevSources.map((s) =>
+            s.key === source.key ? { ...s, channelNumber: 0 } : s,
+          ),
         );
 
         setIsVideoLoading(false);
@@ -329,23 +361,25 @@ function LivePageClient() {
         tvgId: channel.tvgId || channel.name,
         name: channel.name,
         logo: channel.logo,
-        group: channel.group || '其他',
-        url: channel.url
+        group: channel.group || "其他",
+        url: channel.url,
       }));
 
       setCurrentChannels(channels);
 
       // 更新直播源的频道数
-      setLiveSources(prevSources =>
-        prevSources.map(s =>
-          s.key === source.key ? { ...s, channelNumber: channels.length } : s
-        )
+      setLiveSources((prevSources) =>
+        prevSources.map((s) =>
+          s.key === source.key ? { ...s, channelNumber: channels.length } : s,
+        ),
       );
 
       // 默认选中第一个频道
       if (channels.length > 0) {
         if (needLoadChannel) {
-          const foundChannel = channels.find((c: LiveChannel) => c.id === needLoadChannel);
+          const foundChannel = channels.find(
+            (c: LiveChannel) => c.id === needLoadChannel,
+          );
           if (foundChannel) {
             setCurrentChannel(foundChannel);
             setVideoUrl(foundChannel.url);
@@ -365,7 +399,7 @@ function LivePageClient() {
 
       // 按分组组织频道
       const grouped = channels.reduce((acc, channel) => {
-        const group = channel.group || '其他';
+        const group = channel.group || "其他";
         if (!acc[group]) {
           acc[group] = [];
         }
@@ -376,17 +410,19 @@ function LivePageClient() {
       setGroupedChannels(grouped);
 
       // 默认选中当前加载的channel所在的分组，如果没有则选中第一个分组
-      let targetGroup = '';
+      let targetGroup = "";
       if (needLoadChannel) {
-        const foundChannel = channels.find((c: LiveChannel) => c.id === needLoadChannel);
+        const foundChannel = channels.find(
+          (c: LiveChannel) => c.id === needLoadChannel,
+        );
         if (foundChannel) {
-          targetGroup = foundChannel.group || '其他';
+          targetGroup = foundChannel.group || "其他";
         }
       }
 
       // 如果目标分组不存在，则使用第一个分组
       if (!targetGroup || !grouped[targetGroup]) {
-        targetGroup = Object.keys(grouped)[0] || '';
+        targetGroup = Object.keys(grouped)[0] || "";
       }
 
       // 先设置过滤后的频道列表，但不设置选中的分组
@@ -395,7 +431,7 @@ function LivePageClient() {
       // 触发模拟点击分组，让模拟点击来设置分组状态和触发滚动
       if (targetGroup) {
         // 确保切换到频道tab
-        setActiveTab('channels');
+        setActiveTab("channels");
 
         // 使用更长的延迟，确保状态更新和DOM渲染完成
         setTimeout(() => {
@@ -405,17 +441,17 @@ function LivePageClient() {
 
       setIsVideoLoading(false);
     } catch (err) {
-      console.error('获取频道列表失败:', err);
+      console.error("获取频道列表失败:", err);
       // 不设置错误，而是设置空频道列表
       setCurrentChannels([]);
       setGroupedChannels({});
       setFilteredChannels([]);
 
       // 更新直播源的频道数为 0
-      setLiveSources(prevSources =>
-        prevSources.map(s =>
-          s.key === source.key ? { ...s, channelNumber: 0 } : s
-        )
+      setLiveSources((prevSources) =>
+        prevSources.map((s) =>
+          s.key === source.key ? { ...s, channelNumber: 0 } : s,
+        ),
       );
 
       setIsVideoLoading(false);
@@ -440,13 +476,13 @@ function LivePageClient() {
       setCurrentSource(source);
       await fetchChannels(source);
     } catch (err) {
-      console.error('切换直播源失败:', err);
+      console.error("切换直播源失败:", err);
       // 不设置错误，保持当前状态
     } finally {
       // 切换完成，解锁频道切换器
       setIsSwitchingSource(false);
       // 自动切换到频道 tab
-      setActiveTab('channels');
+      setActiveTab("channels");
     }
   };
 
@@ -473,20 +509,22 @@ function LivePageClient() {
     if (channel.tvgId && currentSource) {
       try {
         setIsEpgLoading(true); // 开始加载 EPG 数据
-        const response = await fetch(`/api/live/epg?source=${currentSource.key}&tvgId=${channel.tvgId}`);
+        const response = await fetch(
+          `/api/live/epg?source=${currentSource.key}&tvgId=${channel.tvgId}`,
+        );
         if (response.ok) {
           const result = await response.json();
           if (result.success) {
             // 清洗EPG数据，去除重叠的节目
             const cleanedData = {
               ...result.data,
-              programs: cleanEpgData(result.data.programs)
+              programs: cleanEpgData(result.data.programs),
             };
             setEpgData(cleanedData);
           }
         }
       } catch (error) {
-        console.error('获取节目单信息失败:', error);
+        console.error("获取节目单信息失败:", error);
       } finally {
         setIsEpgLoading(false); // 无论成功失败都结束加载状态
       }
@@ -502,7 +540,9 @@ function LivePageClient() {
     if (!channelListRef.current) return;
 
     // 使用 data 属性来查找频道元素
-    const targetElement = channelListRef.current.querySelector(`[data-channel-id="${channel.id}"]`) as HTMLButtonElement;
+    const targetElement = channelListRef.current.querySelector(
+      `[data-channel-id="${channel.id}"]`,
+    ) as HTMLButtonElement;
 
     if (targetElement) {
       // 计算滚动位置，使频道居中显示
@@ -511,12 +551,16 @@ function LivePageClient() {
       const elementRect = targetElement.getBoundingClientRect();
 
       // 计算目标滚动位置
-      const scrollTop = container.scrollTop + (elementRect.top - containerRect.top) - (containerRect.height / 2) + (elementRect.height / 2);
+      const scrollTop =
+        container.scrollTop +
+        (elementRect.top - containerRect.top) -
+        containerRect.height / 2 +
+        elementRect.height / 2;
 
       // 平滑滚动到目标位置
       container.scrollTo({
         top: Math.max(0, scrollTop),
-        behavior: 'smooth'
+        behavior: "smooth",
       });
     }
   };
@@ -535,7 +579,9 @@ function LivePageClient() {
     }
 
     // 直接通过 data-group 属性查找目标按钮
-    const targetButton = groupContainerRef.current.querySelector(`[data-group="${group}"]`) as HTMLButtonElement;
+    const targetButton = groupContainerRef.current.querySelector(
+      `[data-group="${group}"]`,
+    ) as HTMLButtonElement;
 
     if (targetButton) {
       // 手动设置分组状态，确保状态一致性
@@ -556,7 +602,7 @@ function LivePageClient() {
         // 先暂停播放
         if (artPlayerRef.current.video) {
           artPlayerRef.current.video.pause();
-          artPlayerRef.current.video.src = '';
+          artPlayerRef.current.video.src = "";
           artPlayerRef.current.video.load();
         }
 
@@ -578,25 +624,25 @@ function LivePageClient() {
             // 确保引用被清空
             artPlayerRef.current.video.flv = null;
           } catch (flvError) {
-            console.warn('FLV实例销毁时出错:', flvError);
+            console.warn("FLV实例销毁时出错:", flvError);
             // 强制清空引用
             artPlayerRef.current.video.flv = null;
           }
         }
 
         // 移除所有事件监听器
-        artPlayerRef.current.off('ready');
-        artPlayerRef.current.off('loadstart');
-        artPlayerRef.current.off('loadeddata');
-        artPlayerRef.current.off('canplay');
-        artPlayerRef.current.off('waiting');
-        artPlayerRef.current.off('error');
+        artPlayerRef.current.off("ready");
+        artPlayerRef.current.off("loadstart");
+        artPlayerRef.current.off("loadeddata");
+        artPlayerRef.current.off("canplay");
+        artPlayerRef.current.off("waiting");
+        artPlayerRef.current.off("error");
 
         // 销毁 ArtPlayer 实例
         artPlayerRef.current.destroy();
         artPlayerRef.current = null;
       } catch (err) {
-        console.warn('清理播放器资源时出错:', err);
+        console.warn("清理播放器资源时出错:", err);
         artPlayerRef.current = null;
       }
     }
@@ -605,12 +651,12 @@ function LivePageClient() {
   // 确保视频源正确设置
   const ensureVideoSource = (video: HTMLVideoElement | null, url: string) => {
     if (!video || !url) return;
-    const sources = Array.from(video.getElementsByTagName('source'));
+    const sources = Array.from(video.getElementsByTagName("source"));
     const existed = sources.some((s) => s.src === url);
     if (!existed) {
       // 移除旧的 source，保持唯一
       sources.forEach((s) => s.remove());
-      const sourceEl = document.createElement('source');
+      const sourceEl = document.createElement("source");
       sourceEl.src = url;
       video.appendChild(sourceEl);
     }
@@ -618,8 +664,8 @@ function LivePageClient() {
     // 始终允许远程播放（AirPlay / Cast）
     video.disableRemotePlayback = false;
     // 如果曾经有禁用属性，移除之
-    if (video.hasAttribute('disableRemotePlayback')) {
-      video.removeAttribute('disableRemotePlayback');
+    if (video.hasAttribute("disableRemotePlayback")) {
+      video.removeAttribute("disableRemotePlayback");
     }
   };
 
@@ -629,11 +675,16 @@ function LivePageClient() {
     if (isSwitchingSource) return;
 
     setSelectedGroup(group);
-    const filtered = currentChannels.filter(channel => channel.group === group);
+    const filtered = currentChannels.filter(
+      (channel) => channel.group === group,
+    );
     setFilteredChannels(filtered);
 
     // 如果当前选中的频道在新的分组中，自动滚动到该频道位置
-    if (currentChannel && filtered.some(channel => channel.id === currentChannel.id)) {
+    if (
+      currentChannel &&
+      filtered.some((channel) => channel.id === currentChannel.id)
+    ) {
       setTimeout(() => {
         scrollToChannel(currentChannel);
       }, 100);
@@ -642,7 +693,7 @@ function LivePageClient() {
       if (channelListRef.current) {
         channelListRef.current.scrollTo({
           top: 0,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       }
     }
@@ -664,28 +715,37 @@ function LivePageClient() {
       try {
         if (newFavorited) {
           // 如果未收藏，添加收藏
-          await saveFavorite(`live_${currentSourceRef.current.key}`, `live_${currentChannelRef.current.id}`, {
-            title: currentChannelRef.current.name,
-            source_name: currentSourceRef.current.name,
-            year: '',
-            cover: `/api/proxy/logo?url=${encodeURIComponent(currentChannelRef.current.logo)}&source=${currentSourceRef.current.key}`,
-            total_episodes: 1,
-            save_time: Date.now(),
-            search_title: '',
-            origin: 'live',
-          });
+          await saveFavorite(
+            `live_${currentSourceRef.current.key}`,
+            `live_${currentChannelRef.current.id}`,
+            {
+              title: currentChannelRef.current.name,
+              source_name: currentSourceRef.current.name,
+              year: "",
+              cover: `/api/proxy/logo?url=${encodeURIComponent(
+                currentChannelRef.current.logo,
+              )}&source=${currentSourceRef.current.key}`,
+              total_episodes: 1,
+              save_time: Date.now(),
+              search_title: "",
+              origin: "live",
+            },
+          );
         } else {
           // 如果已收藏，删除收藏
-          await deleteFavorite(`live_${currentSourceRef.current.key}`, `live_${currentChannelRef.current.id}`);
+          await deleteFavorite(
+            `live_${currentSourceRef.current.key}`,
+            `live_${currentChannelRef.current.id}`,
+          );
         }
       } catch (err) {
-        console.error('收藏操作失败:', err);
+        console.error("收藏操作失败:", err);
         // 如果操作失败，回滚状态
         setFavorited(currentFavorited);
         favoritedRef.current = currentFavorited;
       }
     } catch (err) {
-      console.error('切换收藏失败:', err);
+      console.error("切换收藏失败:", err);
     }
   };
 
@@ -699,11 +759,14 @@ function LivePageClient() {
     if (!currentSource || !currentChannel) return;
     (async () => {
       try {
-        const fav = await checkIsFavorited(`live_${currentSource.key}`, `live_${currentChannel.id}`);
+        const fav = await checkIsFavorited(
+          `live_${currentSource.key}`,
+          `live_${currentChannel.id}`,
+        );
         setFavorited(fav);
         favoritedRef.current = fav;
       } catch (err) {
-        console.error('检查收藏状态失败:', err);
+        console.error("检查收藏状态失败:", err);
       }
     })();
   }, [currentSource, currentChannel]);
@@ -713,13 +776,16 @@ function LivePageClient() {
     if (!currentSource || !currentChannel) return;
 
     const unsubscribe = subscribeToDataUpdates(
-      'favoritesUpdated',
+      "favoritesUpdated",
       (favorites: Record<string, any>) => {
-        const key = generateStorageKey(`live_${currentSource.key}`, `live_${currentChannel.id}`);
+        const key = generateStorageKey(
+          `live_${currentSource.key}`,
+          `live_${currentChannel.id}`,
+        );
         const isFav = !!favorites[key];
         setFavorited(isFav);
         favoritedRef.current = isFav;
-      }
+      },
     );
 
     return unsubscribe;
@@ -752,7 +818,7 @@ function LivePageClient() {
       // 平滑滚动到目标位置
       container.scrollTo({
         left: targetScrollLeft,
-        behavior: 'smooth',
+        behavior: "smooth",
       });
     }
   }, [selectedGroup, groupedChannels]);
@@ -765,28 +831,32 @@ function LivePageClient() {
         // 所有的请求都带一个 source 参数
         try {
           const url = new URL(context.url);
-          url.searchParams.set('moontv-source', currentSourceRef.current?.key || '');
+          url.searchParams.set(
+            "moontv-source",
+            currentSourceRef.current?.key || "",
+          );
           context.url = url.toString();
         } catch (error) {
           // ignore
         }
         // 拦截manifest和level请求
         if (
-          (context as any).type === 'manifest' ||
-          (context as any).type === 'level'
+          (context as any).type === "manifest" ||
+          (context as any).type === "level"
         ) {
           // 判断是否浏览器直连
-          const isLiveDirectConnectStr = localStorage.getItem('liveDirectConnect');
-          const isLiveDirectConnect = isLiveDirectConnectStr === 'true';
+          const isLiveDirectConnectStr =
+            localStorage.getItem("liveDirectConnect");
+          const isLiveDirectConnect = isLiveDirectConnectStr === "true";
           if (isLiveDirectConnect) {
             // 浏览器直连，使用 URL 对象处理参数
             try {
               const url = new URL(context.url);
-              url.searchParams.set('allowCORS', 'true');
+              url.searchParams.set("allowCORS", "true");
               context.url = url.toString();
             } catch (error) {
               // 如果 URL 解析失败，回退到字符串拼接
-              context.url = context.url + '&allowCORS=true';
+              context.url = context.url + "&allowCORS=true";
             }
           }
         }
@@ -798,7 +868,7 @@ function LivePageClient() {
 
   function m3u8Loader(video: HTMLVideoElement, url: string) {
     if (!Hls) {
-      console.error('HLS.js 未加载');
+      console.error("HLS.js 未加载");
       return;
     }
 
@@ -808,7 +878,7 @@ function LivePageClient() {
         video.hls.destroy();
         video.hls = null;
       } catch (err) {
-        console.warn('清理 HLS 实例时出错:', err);
+        console.warn("清理 HLS 实例时出错:", err);
       }
     }
 
@@ -827,7 +897,7 @@ function LivePageClient() {
     video.hls = hls;
 
     hls.on(Hls.Events.ERROR, function (event: any, data: any) {
-      console.error('HLS Error:', event, data);
+      console.error("HLS Error:", event, data);
 
       if (data.fatal) {
         switch (data.type) {
@@ -858,7 +928,7 @@ function LivePageClient() {
         return;
       }
 
-      console.log('视频URL:', videoUrl);
+      console.log("视频URL:", videoUrl);
 
       // 销毁之前的播放器实例并创建新的
       if (artPlayerRef.current) {
@@ -866,11 +936,13 @@ function LivePageClient() {
       }
 
       // precheck type
-      let type = 'm3u8';
-      const precheckUrl = `/api/live/precheck?url=${encodeURIComponent(videoUrl)}&moontv-source=${currentSourceRef.current?.key || ''}`;
+      let type = "m3u8";
+      const precheckUrl = `/api/live/precheck?url=${encodeURIComponent(
+        videoUrl,
+      )}&moontv-source=${currentSourceRef.current?.key || ""}`;
       const precheckResponse = await fetch(precheckUrl);
       if (!precheckResponse.ok) {
-        console.error('预检查失败:', precheckResponse.statusText);
+        console.error("预检查失败:", precheckResponse.statusText);
         return;
       }
       const precheckResult = await precheckResponse.json();
@@ -879,7 +951,7 @@ function LivePageClient() {
       }
 
       // 如果不是 m3u8 类型，设置不支持的类型并返回
-      if (type !== 'm3u8') {
+      if (type !== "m3u8") {
         setUnsupportedType(type);
         setIsVideoLoading(false);
         return;
@@ -889,7 +961,9 @@ function LivePageClient() {
       setUnsupportedType(null);
 
       const customType = { m3u8: m3u8Loader };
-      const targetUrl = `/api/proxy/m3u8?url=${encodeURIComponent(videoUrl)}&moontv-source=${currentSourceRef.current?.key || ''}`;
+      const targetUrl = `/api/proxy/m3u8?url=${encodeURIComponent(
+        videoUrl,
+      )}&moontv-source=${currentSourceRef.current?.key || ""}`;
       try {
         // 创建新的播放器实例
         Artplayer.USE_RAF = false;
@@ -920,15 +994,15 @@ function LivePageClient() {
           playsInline: true,
           autoPlayback: false,
           airplay: true,
-          theme: '#22c55e',
-          lang: 'zh-cn',
+          theme: "#22c55e",
+          lang: "zh-cn",
           hotkey: false,
           fastForward: false, // 直播不需要快进
           autoOrientation: true,
           lock: true,
           moreVideoAttr: {
-            crossOrigin: 'anonymous',
-            preload: 'metadata',
+            crossOrigin: "anonymous",
+            preload: "metadata",
           },
           type: type,
           customType: customType,
@@ -939,44 +1013,42 @@ function LivePageClient() {
         });
 
         // 监听播放器事件
-        artPlayerRef.current.on('ready', () => {
+        artPlayerRef.current.on("ready", () => {
           setError(null);
           setIsVideoLoading(false);
-
         });
 
-        artPlayerRef.current.on('loadstart', () => {
+        artPlayerRef.current.on("loadstart", () => {
           setIsVideoLoading(true);
         });
 
-        artPlayerRef.current.on('loadeddata', () => {
+        artPlayerRef.current.on("loadeddata", () => {
           setIsVideoLoading(false);
         });
 
-        artPlayerRef.current.on('canplay', () => {
+        artPlayerRef.current.on("canplay", () => {
           setIsVideoLoading(false);
         });
 
-        artPlayerRef.current.on('waiting', () => {
+        artPlayerRef.current.on("waiting", () => {
           setIsVideoLoading(true);
         });
 
-        artPlayerRef.current.on('error', (err: any) => {
-          console.error('播放器错误:', err);
+        artPlayerRef.current.on("error", (err: any) => {
+          console.error("播放器错误:", err);
         });
 
         if (artPlayerRef.current?.video) {
           ensureVideoSource(
             artPlayerRef.current.video as HTMLVideoElement,
-            targetUrl
+            targetUrl,
           );
         }
-
       } catch (err) {
-        console.error('创建播放器失败:', err);
+        console.error("创建播放器失败:", err);
         // 不设置错误，只记录日志
       }
-    }
+    };
     preload();
   }, [Artplayer, Hls, videoUrl, currentChannel, loading]);
 
@@ -993,10 +1065,10 @@ function LivePageClient() {
       cleanupPlayer();
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
       cleanupPlayer();
     };
   }, []);
@@ -1006,37 +1078,37 @@ function LivePageClient() {
     const handleKeyboardShortcuts = (e: KeyboardEvent) => {
       // 忽略输入框中的按键事件
       if (
-        (e.target as HTMLElement).tagName === 'INPUT' ||
-        (e.target as HTMLElement).tagName === 'TEXTAREA'
+        (e.target as HTMLElement).tagName === "INPUT" ||
+        (e.target as HTMLElement).tagName === "TEXTAREA"
       )
         return;
 
       // 上箭头 = 音量+
-      if (e.key === 'ArrowUp') {
+      if (e.key === "ArrowUp") {
         if (artPlayerRef.current && artPlayerRef.current.volume < 1) {
           artPlayerRef.current.volume =
             Math.round((artPlayerRef.current.volume + 0.1) * 10) / 10;
           artPlayerRef.current.notice.show = `音量: ${Math.round(
-            artPlayerRef.current.volume * 100
+            artPlayerRef.current.volume * 100,
           )}`;
           e.preventDefault();
         }
       }
 
       // 下箭头 = 音量-
-      if (e.key === 'ArrowDown') {
+      if (e.key === "ArrowDown") {
         if (artPlayerRef.current && artPlayerRef.current.volume > 0) {
           artPlayerRef.current.volume =
             Math.round((artPlayerRef.current.volume - 0.1) * 10) / 10;
           artPlayerRef.current.notice.show = `音量: ${Math.round(
-            artPlayerRef.current.volume * 100
+            artPlayerRef.current.volume * 100,
           )}`;
           e.preventDefault();
         }
       }
 
       // 空格 = 播放/暂停
-      if (e.key === ' ') {
+      if (e.key === " ") {
         if (artPlayerRef.current) {
           artPlayerRef.current.toggle();
           e.preventDefault();
@@ -1044,7 +1116,7 @@ function LivePageClient() {
       }
 
       // f 键 = 切换全屏
-      if (e.key === 'f' || e.key === 'F') {
+      if (e.key === "f" || e.key === "F") {
         if (artPlayerRef.current) {
           artPlayerRef.current.fullscreen = !artPlayerRef.current.fullscreen;
           e.preventDefault();
@@ -1052,71 +1124,84 @@ function LivePageClient() {
       }
     };
 
-    document.addEventListener('keydown', handleKeyboardShortcuts);
+    document.addEventListener("keydown", handleKeyboardShortcuts);
     return () => {
-      document.removeEventListener('keydown', handleKeyboardShortcuts);
+      document.removeEventListener("keydown", handleKeyboardShortcuts);
     };
   }, []);
 
   if (loading) {
     return (
-      <PageLayout activePath='/live'>
-        <div className='flex items-center justify-center min-h-screen bg-transparent'>
-          <div className='text-center max-w-md mx-auto px-6'>
+      <PageLayout activePath="/live">
+        <div className="flex items-center justify-center min-h-screen bg-transparent">
+          <div className="text-center max-w-md mx-auto px-6">
             {/* 动画直播图标 */}
-            <div className='relative mb-8'>
-              <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
-                <div className='text-white text-4xl'>📺</div>
+            <div className="relative mb-8">
+              <div className="relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
+                <div className="text-white text-4xl">📺</div>
                 {/* 旋转光环 */}
-                <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin"></div>
               </div>
 
               {/* 浮动粒子效果 */}
-              <div className='absolute top-0 left-0 w-full h-full pointer-events-none'>
-                <div className='absolute top-2 left-2 w-2 h-2 bg-green-400 rounded-full animate-bounce'></div>
+              <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
+                <div className="absolute top-2 left-2 w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
                 <div
-                  className='absolute top-4 right-4 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce'
-                  style={{ animationDelay: '0.5s' }}
+                  className="absolute top-4 right-4 w-1.5 h-1.5 bg-emerald-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "0.5s" }}
                 ></div>
                 <div
-                  className='absolute bottom-3 left-6 w-1 h-1 bg-lime-400 rounded-full animate-bounce'
-                  style={{ animationDelay: '1s' }}
+                  className="absolute bottom-3 left-6 w-1 h-1 bg-lime-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "1s" }}
                 ></div>
               </div>
             </div>
 
             {/* 进度指示器 */}
-            <div className='mb-6 w-80 mx-auto'>
-              <div className='flex justify-center space-x-2 mb-4'>
+            <div className="mb-6 w-80 mx-auto">
+              <div className="flex justify-center space-x-2 mb-4">
                 <div
-                  className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'loading' ? 'bg-green-500 scale-125' : 'bg-green-500'
-                    }`}
+                  className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                    loadingStage === "loading"
+                      ? "bg-green-500 scale-125"
+                      : "bg-green-500"
+                  }`}
                 ></div>
                 <div
-                  className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'fetching' ? 'bg-green-500 scale-125' : 'bg-green-500'
-                    }`}
+                  className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                    loadingStage === "fetching"
+                      ? "bg-green-500 scale-125"
+                      : "bg-green-500"
+                  }`}
                 ></div>
                 <div
-                  className={`w-3 h-3 rounded-full transition-all duration-500 ${loadingStage === 'ready' ? 'bg-green-500 scale-125' : 'bg-gray-300'
-                    }`}
+                  className={`w-3 h-3 rounded-full transition-all duration-500 ${
+                    loadingStage === "ready"
+                      ? "bg-green-500 scale-125"
+                      : "bg-gray-300"
+                  }`}
                 ></div>
               </div>
 
               {/* 进度条 */}
-              <div className='w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden'>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
                 <div
-                  className='h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out'
+                  className="h-full bg-gradient-to-r from-green-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out"
                   style={{
                     width:
-                      loadingStage === 'loading' ? '33%' : loadingStage === 'fetching' ? '66%' : '100%',
+                      loadingStage === "loading"
+                        ? "33%"
+                        : loadingStage === "fetching"
+                        ? "66%"
+                        : "100%",
                   }}
                 ></div>
               </div>
             </div>
 
             {/* 加载消息 */}
-            <div className='space-y-2'>
-              <p className='text-xl font-semibold text-gray-800 dark:text-gray-200 animate-pulse'>
+            <div className="space-y-2">
+              <p className="text-xl font-semibold text-gray-800 dark:text-gray-200 animate-pulse">
                 {loadingMessage}
               </p>
             </div>
@@ -1128,38 +1213,38 @@ function LivePageClient() {
 
   if (error) {
     return (
-      <PageLayout activePath='/live'>
-        <div className='flex items-center justify-center min-h-screen bg-transparent'>
-          <div className='text-center max-w-md mx-auto px-6'>
+      <PageLayout activePath="/live">
+        <div className="flex items-center justify-center min-h-screen bg-transparent">
+          <div className="text-center max-w-md mx-auto px-6">
             {/* 错误图标 */}
-            <div className='relative mb-8'>
-              <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
-                <div className='text-white text-4xl'>😵</div>
+            <div className="relative mb-8">
+              <div className="relative mx-auto w-24 h-24 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
+                <div className="text-white text-4xl">😵</div>
                 {/* 脉冲效果 */}
-                <div className='absolute -inset-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl opacity-20 animate-pulse'></div>
+                <div className="absolute -inset-2 bg-gradient-to-r from-red-500 to-orange-500 rounded-2xl opacity-20 animate-pulse"></div>
               </div>
             </div>
 
             {/* 错误信息 */}
-            <div className='space-y-4 mb-8'>
-              <h2 className='text-2xl font-bold text-gray-800 dark:text-gray-200'>
+            <div className="space-y-4 mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                 哎呀，出现了一些问题
               </h2>
-              <div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4'>
-                <p className='text-red-600 dark:text-red-400 font-medium'>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <p className="text-red-600 dark:text-red-400 font-medium">
                   {error}
                 </p>
               </div>
-              <p className='text-sm text-gray-500 dark:text-gray-400'>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 请检查网络连接或尝试刷新页面
               </p>
             </div>
 
             {/* 操作按钮 */}
-            <div className='space-y-3'>
+            <div className="space-y-3">
               <button
                 onClick={() => window.location.reload()}
-                className='w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-cyan-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl'
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-cyan-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
               >
                 🔄 重新尝试
               </button>
@@ -1171,22 +1256,22 @@ function LivePageClient() {
   }
 
   return (
-    <PageLayout activePath='/live'>
-      <div className='flex flex-col gap-3 py-4 px-5 lg:px-[3rem] 2xl:px-20'>
+    <PageLayout activePath="/live">
+      <div className="flex flex-col gap-3 py-4 px-5 lg:px-[3rem] 2xl:px-20">
         {/* 第一行：页面标题 */}
-        <div className='py-1'>
-          <h1 className='text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 max-w-[80%]'>
-            <Radio className='w-5 h-5 text-blue-500 flex-shrink-0' />
-            <div className='min-w-0 flex-1'>
-              <div className='truncate'>
+        <div className="py-1">
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2 max-w-[80%]">
+            <Radio className="w-5 h-5 text-blue-500 flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <div className="truncate">
                 {currentSource?.name}
                 {currentSource && currentChannel && (
-                  <span className='text-gray-500 dark:text-gray-400'>
+                  <span className="text-gray-500 dark:text-gray-400">
                     {` > ${currentChannel.name}`}
                   </span>
                 )}
                 {currentSource && !currentChannel && (
-                  <span className='text-gray-500 dark:text-gray-400'>
+                  <span className="text-gray-500 dark:text-gray-400">
                     {` > ${currentSource.name}`}
                   </span>
                 )}
@@ -1196,83 +1281,89 @@ function LivePageClient() {
         </div>
 
         {/* 第二行：播放器和频道列表 */}
-        <div className='space-y-2'>
+        <div className="space-y-2">
           {/* 折叠控制 - 仅在 lg 及以上屏幕显示 */}
-          <div className='hidden lg:flex justify-end'>
+          <div className="hidden lg:flex justify-end">
             <button
-              onClick={() =>
-                setIsChannelListCollapsed(!isChannelListCollapsed)
-              }
-              className='group relative flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-200'
-              title={
-                isChannelListCollapsed ? '显示频道列表' : '隐藏频道列表'
-              }
+              onClick={() => setIsChannelListCollapsed(!isChannelListCollapsed)}
+              className="group relative flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-white/80 hover:bg-white dark:bg-gray-800/80 dark:hover:bg-gray-800 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-sm hover:shadow-md transition-all duration-200"
+              title={isChannelListCollapsed ? "显示频道列表" : "隐藏频道列表"}
             >
               <svg
-                className={`w-3.5 h-3.5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${isChannelListCollapsed ? 'rotate-180' : 'rotate-0'
-                  }`}
-                fill='none'
-                stroke='currentColor'
-                viewBox='0 0 24 24'
+                className={`w-3.5 h-3.5 text-gray-500 dark:text-gray-400 transition-transform duration-200 ${
+                  isChannelListCollapsed ? "rotate-180" : "rotate-0"
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
               >
                 <path
-                  strokeLinecap='round'
-                  strokeLinejoin='round'
-                  strokeWidth='2'
-                  d='M9 5l7 7-7 7'
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M9 5l7 7-7 7"
                 />
               </svg>
-              <span className='text-xs font-medium text-gray-600 dark:text-gray-300'>
-                {isChannelListCollapsed ? '显示' : '隐藏'}
+              <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                {isChannelListCollapsed ? "显示" : "隐藏"}
               </span>
 
               {/* 精致的状态指示点 */}
               <div
-                className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full transition-all duration-200 ${isChannelListCollapsed
-                  ? 'bg-orange-400 animate-pulse'
-                  : 'bg-green-400'
-                  }`}
+                className={`absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full transition-all duration-200 ${
+                  isChannelListCollapsed
+                    ? "bg-orange-400 animate-pulse"
+                    : "bg-green-400"
+                }`}
               ></div>
             </button>
           </div>
 
-          <div className={`grid gap-4 lg:h-[500px] xl:h-[650px] 2xl:h-[750px] transition-all duration-300 ease-in-out ${isChannelListCollapsed
-            ? 'grid-cols-1'
-            : 'grid-cols-1 md:grid-cols-4'
-            }`}>
+          <div
+            className={`grid gap-4 lg:h-[500px] xl:h-[650px] 2xl:h-[750px] transition-all duration-300 ease-in-out ${
+              isChannelListCollapsed
+                ? "grid-cols-1"
+                : "grid-cols-1 md:grid-cols-4"
+            }`}
+          >
             {/* 播放器 */}
-            <div className={`h-full transition-all duration-300 ease-in-out ${isChannelListCollapsed ? 'col-span-1' : 'md:col-span-3'}`}>
-              <div className='relative w-full h-[300px] lg:h-full'>
+            <div
+              className={`h-full transition-all duration-300 ease-in-out ${
+                isChannelListCollapsed ? "col-span-1" : "md:col-span-3"
+              }`}
+            >
+              <div className="relative w-full h-[300px] lg:h-full">
                 <div
                   ref={artRef}
-                  className='bg-black w-full h-full rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30'
+                  className="bg-black w-full h-full rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30"
                 ></div>
 
                 {/* 不支持的直播类型提示 */}
                 {unsupportedType && (
-                  <div className='absolute inset-0 bg-black/90 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-[600] transition-all duration-300'>
-                    <div className='text-center max-w-md mx-auto px-6'>
-                      <div className='relative mb-8'>
-                        <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
-                          <div className='text-white text-4xl'>⚠️</div>
-                          <div className='absolute -inset-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl opacity-20 animate-pulse'></div>
+                  <div className="absolute inset-0 bg-black/90 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-[600] transition-all duration-300">
+                    <div className="text-center max-w-md mx-auto px-6">
+                      <div className="relative mb-8">
+                        <div className="relative mx-auto w-24 h-24 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
+                          <div className="text-white text-4xl">⚠️</div>
+                          <div className="absolute -inset-2 bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl opacity-20 animate-pulse"></div>
                         </div>
                       </div>
-                      <div className='space-y-4'>
-                        <h3 className='text-xl font-semibold text-white'>
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-semibold text-white">
                           暂不支持的直播流类型
                         </h3>
-                        <div className='bg-orange-500/20 border border-orange-500/30 rounded-lg p-4'>
-                          <p className='text-orange-300 font-medium'>
-                            当前频道直播流类型：<span className='text-white font-bold'>{unsupportedType.toUpperCase()}</span>
+                        <div className="bg-orange-500/20 border border-orange-500/30 rounded-lg p-4">
+                          <p className="text-orange-300 font-medium">
+                            当前频道直播流类型：
+                            <span className="text-white font-bold">
+                              {unsupportedType.toUpperCase()}
+                            </span>
                           </p>
-                          <p className='text-sm text-orange-200 mt-2'>
+                          <p className="text-sm text-orange-200 mt-2">
                             目前仅支持 M3U8 格式的直播流
                           </p>
                         </div>
-                        <p className='text-sm text-gray-300'>
-                          请尝试其他频道
-                        </p>
+                        <p className="text-sm text-gray-300">请尝试其他频道</p>
                       </div>
                     </div>
                   </div>
@@ -1280,16 +1371,16 @@ function LivePageClient() {
 
                 {/* 视频加载蒙层 */}
                 {isVideoLoading && (
-                  <div className='absolute inset-0 bg-black/85 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-[500] transition-all duration-300'>
-                    <div className='text-center max-w-md mx-auto px-6'>
-                      <div className='relative mb-8'>
-                        <div className='relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300'>
-                          <div className='text-white text-4xl'>📺</div>
-                          <div className='absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin'></div>
+                  <div className="absolute inset-0 bg-black/85 backdrop-blur-sm rounded-xl overflow-hidden shadow-lg border border-white/0 dark:border-white/30 flex items-center justify-center z-[500] transition-all duration-300">
+                    <div className="text-center max-w-md mx-auto px-6">
+                      <div className="relative mb-8">
+                        <div className="relative mx-auto w-24 h-24 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
+                          <div className="text-white text-4xl">📺</div>
+                          <div className="absolute -inset-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl opacity-20 animate-spin"></div>
                         </div>
                       </div>
-                      <div className='space-y-2'>
-                        <p className='text-xl font-semibold text-white animate-pulse'>
+                      <div className="space-y-2">
+                        <p className="text-xl font-semibold text-white animate-pulse">
                           🔄 IPTV 加载中...
                         </p>
                       </div>
@@ -1300,30 +1391,35 @@ function LivePageClient() {
             </div>
 
             {/* 频道列表 */}
-            <div className={`h-[300px] lg:h-full md:overflow-hidden transition-all duration-300 ease-in-out ${isChannelListCollapsed
-              ? 'md:col-span-1 lg:hidden lg:opacity-0 lg:scale-95'
-              : 'md:col-span-1 lg:opacity-100 lg:scale-100'
-              }`}>
-              <div className='md:ml-2 px-4 py-0 h-full rounded-xl bg-black/10 dark:bg-white/5 flex flex-col border border-white/0 dark:border-white/30 overflow-hidden'>
+            <div
+              className={`h-[300px] lg:h-full md:overflow-hidden transition-all duration-300 ease-in-out ${
+                isChannelListCollapsed
+                  ? "md:col-span-1 lg:hidden lg:opacity-0 lg:scale-95"
+                  : "md:col-span-1 lg:opacity-100 lg:scale-100"
+              }`}
+            >
+              <div className="md:ml-2 px-4 py-0 h-full rounded-xl bg-black/10 dark:bg-white/5 flex flex-col border border-white/0 dark:border-white/30 overflow-hidden">
                 {/* 主要的 Tab 切换 */}
-                <div className='flex mb-1 -mx-6 flex-shrink-0'>
+                <div className="flex mb-1 -mx-6 flex-shrink-0">
                   <div
-                    onClick={() => setActiveTab('channels')}
+                    onClick={() => setActiveTab("channels")}
                     className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
-                      ${activeTab === 'channels'
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3'
+                      ${
+                        activeTab === "channels"
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3"
                       }
                     `.trim()}
                   >
                     频道
                   </div>
                   <div
-                    onClick={() => setActiveTab('sources')}
+                    onClick={() => setActiveTab("sources")}
                     className={`flex-1 py-3 px-6 text-center cursor-pointer transition-all duration-200 font-medium
-                      ${activeTab === 'sources'
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3'
+                      ${
+                        activeTab === "sources"
+                          ? "text-green-600 dark:text-green-400"
+                          : "text-gray-700 hover:text-green-600 bg-black/5 dark:bg-white/5 dark:text-gray-300 dark:hover:text-green-400 hover:bg-black/3 dark:hover:bg-white/3"
                       }
                     `.trim()}
                   >
@@ -1332,32 +1428,36 @@ function LivePageClient() {
                 </div>
 
                 {/* 频道 Tab 内容 */}
-                {activeTab === 'channels' && (
+                {activeTab === "channels" && (
                   <>
                     {/* 分组标签 */}
-                    <div className='flex items-center gap-4 mb-4 border-b border-gray-300 dark:border-gray-700 -mx-6 px-6 flex-shrink-0'>
+                    <div className="flex items-center gap-4 mb-4 border-b border-gray-300 dark:border-gray-700 -mx-6 px-6 flex-shrink-0">
                       {/* 切换状态提示 */}
                       {isSwitchingSource && (
-                        <div className='flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400'>
-                          <div className='w-2 h-2 bg-amber-500 rounded-full animate-pulse'></div>
+                        <div className="flex items-center gap-2 text-sm text-amber-600 dark:text-amber-400">
+                          <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse"></div>
                           切换直播源中...
                         </div>
                       )}
 
                       <div
-                        className='flex-1 overflow-x-auto'
+                        className="flex-1 overflow-x-auto"
                         ref={groupContainerRef}
                         onMouseEnter={() => {
                           // 鼠标进入分组标签区域时，添加滚轮事件监听
                           const container = groupContainerRef.current;
                           if (container) {
                             const handleWheel = (e: WheelEvent) => {
-                              if (container.scrollWidth > container.clientWidth) {
+                              if (
+                                container.scrollWidth > container.clientWidth
+                              ) {
                                 e.preventDefault();
                                 container.scrollLeft += e.deltaY;
                               }
                             };
-                            container.addEventListener('wheel', handleWheel, { passive: false });
+                            container.addEventListener("wheel", handleWheel, {
+                              passive: false,
+                            });
                             // 将事件处理器存储在容器上，以便后续移除
                             (container as any)._wheelHandler = handleWheel;
                           }
@@ -1366,12 +1466,15 @@ function LivePageClient() {
                           // 鼠标离开分组标签区域时，移除滚轮事件监听
                           const container = groupContainerRef.current;
                           if (container && (container as any)._wheelHandler) {
-                            container.removeEventListener('wheel', (container as any)._wheelHandler);
+                            container.removeEventListener(
+                              "wheel",
+                              (container as any)._wheelHandler,
+                            );
                             delete (container as any)._wheelHandler;
                           }
                         }}
                       >
-                        <div className='flex gap-4 min-w-max'>
+                        <div className="flex gap-4 min-w-max">
                           {Object.keys(groupedChannels).map((group, index) => (
                             <button
                               key={group}
@@ -1382,20 +1485,25 @@ function LivePageClient() {
                               onClick={() => handleGroupChange(group)}
                               disabled={isSwitchingSource}
                               className={`w-20 relative py-2 text-sm font-medium transition-colors flex-shrink-0 text-center overflow-hidden
-                                 ${isSwitchingSource
-                                  ? 'text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50'
-                                  : selectedGroup === group
-                                    ? 'text-green-500 dark:text-green-400'
-                                    : 'text-gray-700 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400'
-                                }
+                                 ${
+                                   isSwitchingSource
+                                     ? "text-gray-400 dark:text-gray-600 cursor-not-allowed opacity-50"
+                                     : selectedGroup === group
+                                     ? "text-green-500 dark:text-green-400"
+                                     : "text-gray-700 hover:text-green-600 dark:text-gray-300 dark:hover:text-green-400"
+                                 }
                                `.trim()}
                             >
-                              <div className='px-1 overflow-hidden whitespace-nowrap' title={group}>
+                              <div
+                                className="px-1 overflow-hidden whitespace-nowrap"
+                                title={group}
+                              >
                                 {group}
                               </div>
-                              {selectedGroup === group && !isSwitchingSource && (
-                                <div className='absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 dark:bg-green-400' />
-                              )}
+                              {selectedGroup === group &&
+                                !isSwitchingSource && (
+                                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-500 dark:bg-green-400" />
+                                )}
                             </button>
                           ))}
                         </div>
@@ -1403,9 +1511,12 @@ function LivePageClient() {
                     </div>
 
                     {/* 频道列表 */}
-                    <div ref={channelListRef} className='flex-1 overflow-y-auto space-y-2 pb-4'>
+                    <div
+                      ref={channelListRef}
+                      className="flex-1 overflow-y-auto space-y-2 pb-4"
+                    >
                       {filteredChannels.length > 0 ? (
-                        filteredChannels.map(channel => {
+                        filteredChannels.map((channel) => {
                           const isActive = channel.id === currentChannel?.id;
                           return (
                             <button
@@ -1413,31 +1524,40 @@ function LivePageClient() {
                               data-channel-id={channel.id}
                               onClick={() => handleChannelChange(channel)}
                               disabled={isSwitchingSource}
-                              className={`w-full p-3 rounded-lg text-left transition-all duration-200 ${isSwitchingSource
-                                ? 'opacity-50 cursor-not-allowed'
-                                : isActive
-                                  ? 'bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700'
-                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700'
-                                }`}
+                              className={`w-full p-3 rounded-lg text-left transition-all duration-200 ${
+                                isSwitchingSource
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : isActive
+                                  ? "bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700"
+                                  : "hover:bg-gray-100 dark:hover:bg-gray-700"
+                              }`}
                             >
-                              <div className='flex items-center gap-3'>
-                                <div className='w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden'>
+                              <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                                   {channel.logo ? (
                                     <img
-                                      src={`/api/proxy/logo?url=${encodeURIComponent(channel.logo)}&source=${currentSource?.key || ''}`}
+                                      src={`/api/proxy/logo?url=${encodeURIComponent(
+                                        channel.logo,
+                                      )}&source=${currentSource?.key || ""}`}
                                       alt={channel.name}
-                                      className='w-full h-full rounded object-contain'
+                                      className="w-full h-full rounded object-contain"
                                       loading="lazy"
                                     />
                                   ) : (
-                                    <Tv className='w-5 h-5 text-gray-500' />
+                                    <Tv className="w-5 h-5 text-gray-500" />
                                   )}
                                 </div>
-                                <div className='flex-1 min-w-0'>
-                                  <div className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate' title={channel.name}>
+                                <div className="flex-1 min-w-0">
+                                  <div
+                                    className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate"
+                                    title={channel.name}
+                                  >
                                     {channel.name}
                                   </div>
-                                  <div className='text-xs text-gray-500 dark:text-gray-400 mt-1' title={channel.group}>
+                                  <div
+                                    className="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                    title={channel.group}
+                                  >
                                     {channel.group}
                                   </div>
                                 </div>
@@ -1446,14 +1566,14 @@ function LivePageClient() {
                           );
                         })
                       ) : (
-                        <div className='flex flex-col items-center justify-center py-12 text-center'>
-                          <div className='w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4'>
-                            <Tv className='w-8 h-8 text-gray-400 dark:text-gray-600' />
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                            <Tv className="w-8 h-8 text-gray-400 dark:text-gray-600" />
                           </div>
-                          <p className='text-gray-500 dark:text-gray-400 font-medium'>
+                          <p className="text-gray-500 dark:text-gray-400 font-medium">
                             暂无可用频道
                           </p>
-                          <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>
+                          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                             请选择其他直播源或稍后再试
                           </p>
                         </div>
@@ -1463,53 +1583,60 @@ function LivePageClient() {
                 )}
 
                 {/* 直播源 Tab 内容 */}
-                {activeTab === 'sources' && (
-                  <div className='flex flex-col h-full mt-4'>
-                    <div className='flex-1 overflow-y-auto space-y-2 pb-20'>
+                {activeTab === "sources" && (
+                  <div className="flex flex-col h-full mt-4">
+                    <div className="flex-1 overflow-y-auto space-y-2 pb-20">
                       {liveSources.length > 0 ? (
                         liveSources.map((source) => {
-                          const isCurrentSource = source.key === currentSource?.key;
+                          const isCurrentSource =
+                            source.key === currentSource?.key;
                           return (
                             <div
                               key={source.key}
-                              onClick={() => !isCurrentSource && handleSourceChange(source)}
+                              onClick={() =>
+                                !isCurrentSource && handleSourceChange(source)
+                              }
                               className={`flex items-start gap-3 px-2 py-3 rounded-lg transition-all select-none duration-200 relative
-                                ${isCurrentSource
-                                  ? 'bg-green-500/10 dark:bg-green-500/20 border-green-500/30 border'
-                                  : 'hover:bg-gray-200/50 dark:hover:bg-white/10 hover:scale-[1.02] cursor-pointer'
+                                ${
+                                  isCurrentSource
+                                    ? "bg-green-500/10 dark:bg-green-500/20 border-green-500/30 border"
+                                    : "hover:bg-gray-200/50 dark:hover:bg-white/10 hover:scale-[1.02] cursor-pointer"
                                 }`.trim()}
                             >
                               {/* 图标 */}
-                              <div className='w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0'>
-                                <Radio className='w-6 h-6 text-gray-500' />
+                              <div className="w-12 h-12 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                                <Radio className="w-6 h-6 text-gray-500" />
                               </div>
 
                               {/* 信息 */}
-                              <div className='flex-1 min-w-0'>
-                                <div className='text-sm font-medium text-gray-900 dark:text-gray-100 truncate'>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                   {source.name}
                                 </div>
-                                <div className='text-xs text-gray-500 dark:text-gray-400 mt-1'>
-                                  {!source.channelNumber || source.channelNumber === 0 ? '-' : `${source.channelNumber} 个频道`}
+                                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {!source.channelNumber ||
+                                  source.channelNumber === 0
+                                    ? "-"
+                                    : `${source.channelNumber} 个频道`}
                                 </div>
                               </div>
 
                               {/* 当前标识 */}
                               {isCurrentSource && (
-                                <div className='absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full'></div>
+                                <div className="absolute top-2 right-2 w-2 h-2 bg-green-500 rounded-full"></div>
                               )}
                             </div>
                           );
                         })
                       ) : (
-                        <div className='flex flex-col items-center justify-center py-12 text-center'>
-                          <div className='w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4'>
-                            <Radio className='w-8 h-8 text-gray-400 dark:text-gray-600' />
+                        <div className="flex flex-col items-center justify-center py-12 text-center">
+                          <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
+                            <Radio className="w-8 h-8 text-gray-400 dark:text-gray-600" />
                           </div>
-                          <p className='text-gray-500 dark:text-gray-400 font-medium'>
+                          <p className="text-gray-500 dark:text-gray-400 font-medium">
                             暂无可用直播源
                           </p>
-                          <p className='text-sm text-gray-400 dark:text-gray-500 mt-1'>
+                          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                             请检查网络连接或联系管理员添加直播源
                           </p>
                         </div>
@@ -1524,26 +1651,28 @@ function LivePageClient() {
 
         {/* 当前频道信息 */}
         {currentChannel && (
-          <div className='pt-4'>
-            <div className='flex flex-col lg:flex-row gap-4'>
+          <div className="pt-4">
+            <div className="flex flex-col lg:flex-row gap-4">
               {/* 频道图标+名称 - 在小屏幕上占100%，大屏幕占20% */}
-              <div className='w-full flex-shrink-0'>
-                <div className='flex items-center gap-4'>
-                  <div className='w-20 h-20 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden'>
+              <div className="w-full flex-shrink-0">
+                <div className="flex items-center gap-4">
+                  <div className="w-20 h-20 bg-gray-300 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
                     {currentChannel.logo ? (
                       <img
-                        src={`/api/proxy/logo?url=${encodeURIComponent(currentChannel.logo)}&source=${currentSource?.key || ''}`}
+                        src={`/api/proxy/logo?url=${encodeURIComponent(
+                          currentChannel.logo,
+                        )}&source=${currentSource?.key || ""}`}
                         alt={currentChannel.name}
-                        className='w-full h-full rounded object-contain'
+                        className="w-full h-full rounded object-contain"
                         loading="lazy"
                       />
                     ) : (
-                      <Tv className='w-10 h-10 text-gray-500' />
+                      <Tv className="w-10 h-10 text-gray-500" />
                     )}
                   </div>
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex items-center gap-3'>
-                      <h3 className='text-lg font-semibold text-gray-900 dark:text-gray-100 truncate'>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                         {currentChannel.name}
                       </h3>
                       <button
@@ -1551,14 +1680,14 @@ function LivePageClient() {
                           e.stopPropagation();
                           handleToggleFavorite();
                         }}
-                        className='flex-shrink-0 hover:opacity-80 transition-opacity'
-                        title={favorited ? '取消收藏' : '收藏'}
+                        className="flex-shrink-0 hover:opacity-80 transition-opacity"
+                        title={favorited ? "取消收藏" : "收藏"}
                       >
                         <FavoriteIcon filled={favorited} />
                       </button>
                     </div>
-                    <p className='text-sm text-gray-500 dark:text-gray-400 truncate'>
-                      {currentSource?.name} {' > '} {currentChannel.group}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                      {currentSource?.name} {" > "} {currentChannel.group}
                     </p>
                   </div>
                 </div>
@@ -1583,23 +1712,23 @@ const FavoriteIcon = ({ filled }: { filled: boolean }) => {
   if (filled) {
     return (
       <svg
-        className='h-6 w-6'
-        viewBox='0 0 24 24'
-        xmlns='http://www.w3.org/2000/svg'
+        className="h-6 w-6"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
       >
         <path
-          d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'
-          fill='#ef4444' /* Tailwind red-500 */
-          stroke='#ef4444'
-          strokeWidth='2'
-          strokeLinecap='round'
-          strokeLinejoin='round'
+          d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+          fill="#ef4444" /* Tailwind red-500 */
+          stroke="#ef4444"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
         />
       </svg>
     );
   }
   return (
-    <Heart className='h-6 w-6 stroke-[1] text-gray-600 dark:text-gray-300' />
+    <Heart className="h-6 w-6 stroke-[1] text-gray-600 dark:text-gray-300" />
   );
 };
 

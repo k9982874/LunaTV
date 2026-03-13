@@ -29,6 +29,6 @@ export interface AdminConfig {
 }
 
 export interface AdminConfigResult {
-  Role: 'owner' | 'admin';
+  Role: "owner" | "admin";
   Config: AdminConfig;
 }

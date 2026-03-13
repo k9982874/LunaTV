@@ -1,9 +1,27 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { API_CONFIG, ApiSite, getConfig } from '@/lib/config';
-import { getCachedSearchPage, setCachedSearchPage } from '@/lib/search-cache';
-import { SearchResult } from '@/lib/types';
-import { cleanHtmlTags } from '@/lib/utils';
+import { ApiSite, defalutUserAgent, getConfig } from "@/lib/config";
+import { getCachedSearchPage, setCachedSearchPage } from "@/lib/search-cache";
+import { SearchResult } from "@/lib/types";
+import { cleanHtmlTags } from "@/lib/utils";
+
+const searchPath = "?ac=videolist&wd=";
+const detailPath = "?ac=videolist&ids=";
+// search: {
+//   path: '?ac=videolist&wd=',
+//   pagePath: '?ac=videolist&wd={query}&pg={page}',
+//   headers: {
+//     'User-Agent': defalutUserAgent,
+//     Accept: 'application/json',
+//   },
+// },
+// detail: {
+//   path: '?ac=videolist&ids=',
+//   headers: {
+//     'User-Agent': defalutUserAgent,
+//     Accept: 'application/json',
+//   },
+// },
 
 interface ApiSearchItem {
   vod_id: string;
@@ -26,12 +44,12 @@ async function searchWithCache(
   query: string,
   page: number,
   url: string,
-  timeoutMs = 8000
+  timeoutMs = 8000,
 ): Promise<{ results: SearchResult[]; pageCount?: number }> {
   // 先查缓存
   const cached = getCachedSearchPage(apiSite.key, query, page);
   if (cached) {
-    if (cached.status === 'ok') {
+    if (cached.status === "ok") {
       return { results: cached.data, pageCount: cached.pageCount };
     } else {
       return { results: [] };
@@ -44,7 +62,10 @@ async function searchWithCache(
 
   try {
     const response = await fetch(url, {
-      headers: API_CONFIG.search.headers,
+      headers: {
+        "User-Agent": defalutUserAgent,
+        Accept: "application/json",
+      },
       signal: controller.signal,
     });
 
@@ -52,7 +73,7 @@ async function searchWithCache(
 
     if (!response.ok) {
       if (response.status === 403) {
-        setCachedSearchPage(apiSite.key, query, page, 'forbidden', []);
+        setCachedSearchPage(apiSite.key, query, page, "forbidden", []);
       }
       return { results: [] };
     }
@@ -76,17 +97,17 @@ async function searchWithCache(
       // 使用正则表达式从 vod_play_url 提取 m3u8 链接
       if (item.vod_play_url) {
         // 先用 $$$ 分割
-        const vod_play_url_array = item.vod_play_url.split('$$$');
+        const vod_play_url_array = item.vod_play_url.split("$$$");
         // 分集之间#分割，标题和播放链接 $ 分割
         vod_play_url_array.forEach((url: string) => {
           const matchEpisodes: string[] = [];
           const matchTitles: string[] = [];
-          const title_url_array = url.split('#');
+          const title_url_array = url.split("#");
           title_url_array.forEach((title_url: string) => {
-            const episode_title_url = title_url.split('$');
+            const episode_title_url = title_url.split("$");
             if (
               episode_title_url.length === 2 &&
-              episode_title_url[1].endsWith('.m3u8')
+              episode_title_url[1].endsWith(".m3u8")
             ) {
               matchTitles.push(episode_title_url[0]);
               matchEpisodes.push(episode_title_url[1]);
@@ -101,7 +122,7 @@ async function searchWithCache(
 
       return {
         id: item.vod_id.toString(),
-        title: item.vod_name.trim().replace(/\s+/g, ' '),
+        title: item.vod_name.trim().replace(/\s+/g, " "),
         poster: item.vod_pic,
         episodes,
         episodes_titles: titles,
@@ -109,27 +130,32 @@ async function searchWithCache(
         source_name: apiSite.name,
         class: item.vod_class,
         year: item.vod_year
-          ? item.vod_year.match(/\d{4}/)?.[0] || ''
-          : 'unknown',
-        desc: cleanHtmlTags(item.vod_content || ''),
+          ? item.vod_year.match(/\d{4}/)?.[0] || ""
+          : "unknown",
+        desc: cleanHtmlTags(item.vod_content || ""),
         type_name: item.type_name,
         douban_id: item.vod_douban_id,
       };
     });
 
     // 过滤掉集数为 0 的结果
-    const results = allResults.filter((result: SearchResult) => result.episodes.length > 0);
+    const results = allResults.filter(
+      (result: SearchResult) => result.episodes.length > 0,
+    );
 
     const pageCount = page === 1 ? data.pagecount || 1 : undefined;
     // 写入缓存（成功）
-    setCachedSearchPage(apiSite.key, query, page, 'ok', results, pageCount);
+    setCachedSearchPage(apiSite.key, query, page, "ok", results, pageCount);
     return { results, pageCount };
   } catch (error: any) {
     clearTimeout(timeoutId);
     // 识别被 AbortController 中止（超时）
-    const aborted = error?.name === 'AbortError' || error?.code === 20 || error?.message?.includes('aborted');
+    const aborted =
+      error?.name === "AbortError" ||
+      error?.code === 20 ||
+      error?.message?.includes("aborted");
     if (aborted) {
-      setCachedSearchPage(apiSite.key, query, page, 'timeout', []);
+      setCachedSearchPage(apiSite.key, query, page, "timeout", []);
     }
     return { results: [] };
   }
@@ -137,15 +163,20 @@ async function searchWithCache(
 
 export async function searchFromApi(
   apiSite: ApiSite,
-  query: string
+  query: string,
 ): Promise<SearchResult[]> {
   try {
     const apiBaseUrl = apiSite.api;
-    const apiUrl =
-      apiBaseUrl + API_CONFIG.search.path + encodeURIComponent(query);
+    const apiUrl = apiBaseUrl + searchPath + encodeURIComponent(query);
 
     // 使用新的缓存搜索函数处理第一页
-    const firstPageResult = await searchWithCache(apiSite, query, 1, apiUrl, 8000);
+    const firstPageResult = await searchWithCache(
+      apiSite,
+      query,
+      1,
+      apiUrl,
+      8000,
+    );
     const results = firstPageResult.results;
     const pageCountFromFirst = firstPageResult.pageCount;
 
@@ -164,13 +195,20 @@ export async function searchFromApi(
       for (let page = 2; page <= pagesToFetch + 1; page++) {
         const pageUrl =
           apiBaseUrl +
-          API_CONFIG.search.pagePath
-            .replace('{query}', encodeURIComponent(query))
-            .replace('{page}', page.toString());
+          searchPath +
+          encodeURIComponent(query) +
+          "&pg=" +
+          page.toString();
 
         const pagePromise = (async () => {
           // 使用新的缓存搜索函数处理分页
-          const pageResult = await searchWithCache(apiSite, query, page, pageUrl, 8000);
+          const pageResult = await searchWithCache(
+            apiSite,
+            query,
+            page,
+            pageUrl,
+            8000,
+          );
           return pageResult.results;
         })();
 
@@ -199,19 +237,22 @@ const M3U8_PATTERN = /(https?:\/\/[^"'\s]+?\.m3u8)/g;
 
 export async function getDetailFromApi(
   apiSite: ApiSite,
-  id: string
+  id: string,
 ): Promise<SearchResult> {
   if (apiSite.detail) {
     return handleSpecialSourceDetail(id, apiSite);
   }
 
-  const detailUrl = `${apiSite.api}${API_CONFIG.detail.path}${id}`;
+  const detailUrl = `${apiSite.api}${detailPath}${id}`;
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   const response = await fetch(detailUrl, {
-    headers: API_CONFIG.detail.headers,
+    headers: {
+      "User-Agent": defalutUserAgent,
+      Accept: "application/json",
+    },
     signal: controller.signal,
   });
 
@@ -229,7 +270,7 @@ export async function getDetailFromApi(
     !Array.isArray(data.list) ||
     data.list.length === 0
   ) {
-    throw new Error('获取到的详情内容无效');
+    throw new Error("获取到的详情内容无效");
   }
 
   const videoDetail = data.list[0];
@@ -239,17 +280,17 @@ export async function getDetailFromApi(
   // 处理播放源拆分
   if (videoDetail.vod_play_url) {
     // 先用 $$$ 分割
-    const vod_play_url_array = videoDetail.vod_play_url.split('$$$');
+    const vod_play_url_array = videoDetail.vod_play_url.split("$$$");
     // 分集之间#分割，标题和播放链接 $ 分割
     vod_play_url_array.forEach((url: string) => {
       const matchEpisodes: string[] = [];
       const matchTitles: string[] = [];
-      const title_url_array = url.split('#');
+      const title_url_array = url.split("#");
       title_url_array.forEach((title_url: string) => {
-        const episode_title_url = title_url.split('$');
+        const episode_title_url = title_url.split("$");
         if (
           episode_title_url.length === 2 &&
-          episode_title_url[1].endsWith('.m3u8')
+          episode_title_url[1].endsWith(".m3u8")
         ) {
           matchTitles.push(episode_title_url[0]);
           matchEpisodes.push(episode_title_url[1]);
@@ -265,7 +306,7 @@ export async function getDetailFromApi(
   // 如果播放源为空，则尝试从内容中解析 m3u8
   if (episodes.length === 0 && videoDetail.vod_content) {
     const matches = videoDetail.vod_content.match(M3U8_PATTERN) || [];
-    episodes = matches.map((link: string) => link.replace(/^\$/, ''));
+    episodes = matches.map((link: string) => link.replace(/^\$/, ""));
   }
 
   return {
@@ -278,8 +319,8 @@ export async function getDetailFromApi(
     source_name: apiSite.name,
     class: videoDetail.vod_class,
     year: videoDetail.vod_year
-      ? videoDetail.vod_year.match(/\d{4}/)?.[0] || ''
-      : 'unknown',
+      ? videoDetail.vod_year.match(/\d{4}/)?.[0] || ""
+      : "unknown",
     desc: cleanHtmlTags(videoDetail.vod_content),
     type_name: videoDetail.type_name,
     douban_id: videoDetail.vod_douban_id,
@@ -288,7 +329,7 @@ export async function getDetailFromApi(
 
 async function handleSpecialSourceDetail(
   id: string,
-  apiSite: ApiSite
+  apiSite: ApiSite,
 ): Promise<SearchResult> {
   const detailUrl = `${apiSite.detail}/index.php/vod/detail/id/${id}.html`;
 
@@ -296,7 +337,10 @@ async function handleSpecialSourceDetail(
   const timeoutId = setTimeout(() => controller.abort(), 10000);
 
   const response = await fetch(detailUrl, {
-    headers: API_CONFIG.detail.headers,
+    headers: {
+      "User-Agent": defalutUserAgent,
+      Accept: "application/json",
+    },
     signal: controller.signal,
   });
 
@@ -309,7 +353,7 @@ async function handleSpecialSourceDetail(
   const html = await response.text();
   let matches: string[] = [];
 
-  if (apiSite.key === 'ffzy') {
+  if (apiSite.key === "ffzy") {
     const ffzyPattern =
       /\$(https?:\/\/[^"'\s]+?\/\d{8}\/\d+_[a-f0-9]+\/index\.m3u8)/g;
     matches = html.match(ffzyPattern) || [];
@@ -323,32 +367,32 @@ async function handleSpecialSourceDetail(
   // 去重并清理链接前缀
   matches = Array.from(new Set(matches)).map((link: string) => {
     link = link.substring(1); // 去掉开头的 $
-    const parenIndex = link.indexOf('(');
+    const parenIndex = link.indexOf("(");
     return parenIndex > 0 ? link.substring(0, parenIndex) : link;
   });
 
   // 根据 matches 数量生成剧集标题
   const episodes_titles = Array.from({ length: matches.length }, (_, i) =>
-    (i + 1).toString()
+    (i + 1).toString(),
   );
 
   // 提取标题
   const titleMatch = html.match(/<h1[^>]*>([^<]+)<\/h1>/);
-  const titleText = titleMatch ? titleMatch[1].trim() : '';
+  const titleText = titleMatch ? titleMatch[1].trim() : "";
 
   // 提取描述
   const descMatch = html.match(
-    /<div[^>]*class=["']sketch["'][^>]*>([\s\S]*?)<\/div>/
+    /<div[^>]*class=["']sketch["'][^>]*>([\s\S]*?)<\/div>/,
   );
-  const descText = descMatch ? cleanHtmlTags(descMatch[1]) : '';
+  const descText = descMatch ? cleanHtmlTags(descMatch[1]) : "";
 
   // 提取封面
   const coverMatch = html.match(/(https?:\/\/[^"'\s]+?\.jpg)/g);
-  const coverUrl = coverMatch ? coverMatch[0].trim() : '';
+  const coverUrl = coverMatch ? coverMatch[0].trim() : "";
 
   // 提取年份
   const yearMatch = html.match(/>(\d{4})</);
-  const yearText = yearMatch ? yearMatch[1] : 'unknown';
+  const yearText = yearMatch ? yearMatch[1] : "unknown";
 
   return {
     id,
@@ -358,10 +402,10 @@ async function handleSpecialSourceDetail(
     episodes_titles,
     source: apiSite.key,
     source_name: apiSite.name,
-    class: '',
+    class: "",
     year: yearText,
     desc: descText,
-    type_name: '',
+    type_name: "",
     douban_id: 0,
   };
 }

@@ -1,9 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, no-console, @typescript-eslint/no-non-null-assertion */
 
-import { db } from '@/lib/db';
+import { db } from "@/lib/db";
 
-import { User } from '@/lib/types';
-import { AdminConfig } from './admin.types';
+import { User } from "@/lib/types";
+import { AdminConfig } from "./admin.types";
+
+export const defalutUserAgent =
+  process.env.USER_AGENT ||
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.6 Safari/605.1.15";
+
+export const liveUserAgent = process.env.LIVE_USER_AGENT || "AptvPlayer/1.4.10";
 
 export interface ApiSite {
   key: string;
@@ -26,37 +32,16 @@ interface ConfigFileStruct {
   };
   custom_category?: {
     name?: string;
-    type: 'movie' | 'tv';
+    type: "movie" | "tv";
     query: string;
   }[];
   lives?: {
     [key: string]: LiveCfg;
-  }
+  };
 }
-
-export const API_CONFIG = {
-  search: {
-    path: '?ac=videolist&wd=',
-    pagePath: '?ac=videolist&wd={query}&pg={page}',
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      Accept: 'application/json',
-    },
-  },
-  detail: {
-    path: '?ac=videolist&ids=',
-    headers: {
-      'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-      Accept: 'application/json',
-    },
-  },
-};
 
 // 在模块加载时根据环境决定配置来源
 let cachedConfig: AdminConfig;
-
 
 // 从配置文件补充管理员配置
 export function refineConfig(adminConfig: AdminConfig): AdminConfig {
@@ -70,7 +55,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
   // 合并文件中的源信息
   const apiSitesFromFile = Object.entries(fileConfig.api_site || []);
   const currentApiSites = new Map(
-    (adminConfig.SourceConfig || []).map((s) => [s.key, s])
+    (adminConfig.SourceConfig || []).map((s) => [s.key, s]),
   );
 
   apiSitesFromFile.forEach(([key, site]) => {
@@ -80,7 +65,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
       existingSource.name = site.name;
       existingSource.api = site.api;
       existingSource.detail = site.detail;
-      existingSource.from = 'config';
+      existingSource.from = "config";
     } else {
       // 如果不存在，创建新条目
       currentApiSites.set(key, {
@@ -88,7 +73,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
         name: site.name,
         api: site.api,
         detail: site.detail,
-        from: 'config',
+        from: "config",
         disabled: false,
       });
     }
@@ -98,7 +83,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
   const apiSitesFromFileKey = new Set(apiSitesFromFile.map(([key]) => key));
   currentApiSites.forEach((source) => {
     if (!apiSitesFromFileKey.has(source.key)) {
-      source.from = 'custom';
+      source.from = "custom";
     }
   });
 
@@ -108,7 +93,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
   // 覆盖 CustomCategories
   const customCategoriesFromFile = fileConfig.custom_category || [];
   const currentCustomCategories = new Map(
-    (adminConfig.CustomCategories || []).map((c) => [c.query + c.type, c])
+    (adminConfig.CustomCategories || []).map((c) => [c.query + c.type, c]),
   );
 
   customCategoriesFromFile.forEach((category) => {
@@ -118,13 +103,13 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
       existedCategory.name = category.name;
       existedCategory.query = category.query;
       existedCategory.type = category.type;
-      existedCategory.from = 'config';
+      existedCategory.from = "config";
     } else {
       currentCustomCategories.set(key, {
         name: category.name,
         type: category.type,
         query: category.query,
-        from: 'config',
+        from: "config",
         disabled: false,
       });
     }
@@ -132,11 +117,11 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
 
   // 检查现有 CustomCategories 是否在 fileConfig.custom_category 中，如果不在则标记为 custom
   const customCategoriesFromFileKeys = new Set(
-    customCategoriesFromFile.map((c) => c.query + c.type)
+    customCategoriesFromFile.map((c) => c.query + c.type),
   );
   currentCustomCategories.forEach((category) => {
     if (!customCategoriesFromFileKeys.has(category.query + category.type)) {
-      category.from = 'custom';
+      category.from = "custom";
     }
   });
 
@@ -145,7 +130,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
 
   const livesFromFile = Object.entries(fileConfig.lives || []);
   const currentLives = new Map(
-    (adminConfig.LiveConfig || []).map((l) => [l.key, l])
+    (adminConfig.LiveConfig || []).map((l) => [l.key, l]),
   );
   livesFromFile.forEach(([key, site]) => {
     const existingLive = currentLives.get(key);
@@ -163,7 +148,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
         ua: site.ua,
         epg: site.epg,
         channelNumber: 0,
-        from: 'config',
+        from: "config",
         disabled: false,
       });
     }
@@ -173,7 +158,7 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
   const livesFromFileKeys = new Set(livesFromFile.map(([key]) => key));
   currentLives.forEach((live) => {
     if (!livesFromFileKeys.has(live.key)) {
-      live.from = 'custom';
+      live.from = "custom";
     }
   });
 
@@ -183,45 +168,48 @@ export function refineConfig(adminConfig: AdminConfig): AdminConfig {
   return adminConfig;
 }
 
-async function getInitConfig(configFile: string | null, subConfig: {
-  URL: string;
-  AutoUpdate: boolean;
-  LastCheck: string;
-} = {
+async function getInitConfig(
+  configFile: string | null,
+  subConfig: {
+    URL: string;
+    AutoUpdate: boolean;
+    LastCheck: string;
+  } = {
     URL: "",
     AutoUpdate: false,
     LastCheck: "",
-  }): Promise<AdminConfig> {
+  },
+): Promise<AdminConfig> {
   let cfgFile = {} as ConfigFileStruct;
   try {
     if (configFile) {
       cfgFile = JSON.parse(configFile) as ConfigFileStruct;
     }
   } catch (e) {
-    console.warn('解析配置文件失败:', e);
+    console.warn("解析配置文件失败:", e);
   }
 
   const adminConfig: AdminConfig = {
     ConfigFile: configFile || "",
     ConfigSubscribtion: subConfig,
     SiteConfig: {
-      SiteName: process.env.NEXT_PUBLIC_SITE_NAME || 'LunaTV',
+      SiteName: process.env.NEXT_PUBLIC_SITE_NAME || "LunaTV",
       Announcement:
         process.env.ANNOUNCEMENT ||
-        '本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。',
+        "本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。",
       SearchDownstreamMaxPage:
         Number(process.env.NEXT_PUBLIC_SEARCH_MAX_PAGE) || 5,
       SiteInterfaceCacheTime: cfgFile.cache_time || 7200,
       DoubanProxyType:
-        process.env.NEXT_PUBLIC_DOUBAN_PROXY_TYPE || 'cmliussss-cdn-tencent',
-      DoubanProxy: process.env.NEXT_PUBLIC_DOUBAN_PROXY || '',
+        process.env.NEXT_PUBLIC_DOUBAN_PROXY_TYPE || "cmliussss-cdn-tencent",
+      DoubanProxy: process.env.NEXT_PUBLIC_DOUBAN_PROXY || "",
       DoubanImageProxyType:
-        process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE || 'cmliussss-cdn-tencent',
-      DoubanImageProxy: process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY || '',
+        process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY_TYPE ||
+        "cmliussss-cdn-tencent",
+      DoubanImageProxy: process.env.NEXT_PUBLIC_DOUBAN_IMAGE_PROXY || "",
       DisableYellowFilter:
-        process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === 'true',
-      FluidSearch:
-        process.env.NEXT_PUBLIC_FLUID_SEARCH !== 'false',
+        process.env.NEXT_PUBLIC_DISABLE_YELLOW_FILTER === "true",
+      FluidSearch: process.env.NEXT_PUBLIC_FLUID_SEARCH !== "false",
     },
     UserConfig: {
       Users: [],
@@ -236,7 +224,7 @@ async function getInitConfig(configFile: string | null, subConfig: {
   try {
     allUsers = await db.getAllUsers();
   } catch (e) {
-    console.error('获取用户列表失败:', e);
+    console.error("获取用户列表失败:", e);
   }
   adminConfig.UserConfig.Users = allUsers.map((user) => ({
     username: user.username,
@@ -253,7 +241,7 @@ async function getInitConfig(configFile: string | null, subConfig: {
       name: site.name,
       api: site.api,
       detail: site.detail,
-      from: 'config',
+      from: "config",
       disabled: false,
     });
   });
@@ -264,7 +252,7 @@ async function getInitConfig(configFile: string | null, subConfig: {
       name: category.name || category.query,
       type: category.type,
       query: category.query,
-      from: 'config',
+      from: "config",
       disabled: false,
     });
   });
@@ -281,7 +269,7 @@ async function getInitConfig(configFile: string | null, subConfig: {
       ua: live.ua,
       epg: live.epg,
       channelNumber: 0,
-      from: 'config',
+      from: "config",
       disabled: false,
     });
   });
@@ -300,7 +288,7 @@ export async function getConfig(): Promise<AdminConfig> {
   try {
     adminConfig = await db.getAdminConfig();
   } catch (e) {
-    console.error('获取管理员配置失败:', e);
+    console.error("获取管理员配置失败:", e);
   }
 
   // db 中无配置，执行一次初始化
@@ -318,13 +306,19 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
   if (!adminConfig.UserConfig) {
     adminConfig.UserConfig = { Users: [] };
   }
-  if (!adminConfig.UserConfig.Users || !Array.isArray(adminConfig.UserConfig.Users)) {
+  if (
+    !adminConfig.UserConfig.Users ||
+    !Array.isArray(adminConfig.UserConfig.Users)
+  ) {
     adminConfig.UserConfig.Users = [];
   }
   if (!adminConfig.SourceConfig || !Array.isArray(adminConfig.SourceConfig)) {
     adminConfig.SourceConfig = [];
   }
-  if (!adminConfig.CustomCategories || !Array.isArray(adminConfig.CustomCategories)) {
+  if (
+    !adminConfig.CustomCategories ||
+    !Array.isArray(adminConfig.CustomCategories)
+  ) {
     adminConfig.CustomCategories = [];
   }
   if (!adminConfig.LiveConfig || !Array.isArray(adminConfig.LiveConfig)) {
@@ -353,13 +347,15 @@ export function configSelfCheck(adminConfig: AdminConfig): AdminConfig {
 
   // 自定义分类去重
   const seenCustomCategoryKeys = new Set<string>();
-  adminConfig.CustomCategories = adminConfig.CustomCategories.filter((category) => {
-    if (seenCustomCategoryKeys.has(category.query + category.type)) {
-      return false;
-    }
-    seenCustomCategoryKeys.add(category.query + category.type);
-    return true;
-  });
+  adminConfig.CustomCategories = adminConfig.CustomCategories.filter(
+    (category) => {
+      if (seenCustomCategoryKeys.has(category.query + category.type)) {
+        return false;
+      }
+      seenCustomCategoryKeys.add(category.query + category.type);
+      return true;
+    },
+  );
 
   // 直播源去重
   const seenLiveKeys = new Set<string>();
@@ -379,12 +375,15 @@ export async function resetConfig() {
   try {
     originConfig = await db.getAdminConfig();
   } catch (e) {
-    console.error('获取管理员配置失败:', e);
+    console.error("获取管理员配置失败:", e);
   }
   if (!originConfig) {
     originConfig = {} as AdminConfig;
   }
-  const adminConfig = await getInitConfig(originConfig.ConfigFile, originConfig.ConfigSubscribtion);
+  const adminConfig = await getInitConfig(
+    originConfig.ConfigFile,
+    originConfig.ConfigSubscribtion,
+  );
   cachedConfig = adminConfig;
   await db.saveAdminConfig(adminConfig);
 
@@ -412,12 +411,14 @@ export async function getAvailableApiSites(user?: string): Promise<ApiSite[]> {
   // 优先根据用户自己的 enabledApis 配置查找
   if (userConfig.enabledApis && userConfig.enabledApis.length > 0) {
     const userApiSitesSet = new Set(userConfig.enabledApis);
-    return allApiSites.filter((s) => userApiSitesSet.has(s.key)).map((s) => ({
-      key: s.key,
-      name: s.name,
-      api: s.api,
-      detail: s.detail,
-    }));
+    return allApiSites
+      .filter((s) => userApiSitesSet.has(s.key))
+      .map((s) => ({
+        key: s.key,
+        name: s.name,
+        api: s.api,
+        detail: s.detail,
+      }));
   }
 
   // 如果没有 enabledApis 配置，则根据 tags 查找
@@ -425,20 +426,24 @@ export async function getAvailableApiSites(user?: string): Promise<ApiSite[]> {
     const enabledApisFromTags = new Set<string>();
 
     // 遍历用户的所有 tags，收集对应的 enabledApis
-    userConfig.tags.forEach(tagName => {
-      const tagConfig = config.UserConfig.Tags?.find(t => t.name === tagName);
+    userConfig.tags.forEach((tagName) => {
+      const tagConfig = config.UserConfig.Tags?.find((t) => t.name === tagName);
       if (tagConfig && tagConfig.enabledApis) {
-        tagConfig.enabledApis.forEach(apiKey => enabledApisFromTags.add(apiKey));
+        tagConfig.enabledApis.forEach((apiKey) =>
+          enabledApisFromTags.add(apiKey),
+        );
       }
     });
 
     if (enabledApisFromTags.size > 0) {
-      return allApiSites.filter((s) => enabledApisFromTags.has(s.key)).map((s) => ({
-        key: s.key,
-        name: s.name,
-        api: s.api,
-        detail: s.detail,
-      }));
+      return allApiSites
+        .filter((s) => enabledApisFromTags.has(s.key))
+        .map((s) => ({
+          key: s.key,
+          name: s.name,
+          api: s.api,
+          detail: s.detail,
+        }));
     }
   }
 

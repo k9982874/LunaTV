@@ -1,20 +1,18 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
-/.pnp
-.pnp.js
+node_modules/
 
 # testing
-/coverage
+coverage/
 
 # next.js
-.next
-/.next/
-/out/
+.next/
+out/
 
 # production
-/build
+build/
+dist/
 
 # misc
 .DS_Store
@@ -27,6 +25,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # local env files
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -34,8 +33,15 @@ yarn-error.log*
 
 # vercel
 .vercel
+vercel.json
 
 # changelog
 CHANGELOG.md
 
+Dockerfile
+
 pnpm-lock.yaml
+
+README.md
+LICENSE
+VERSION.txt

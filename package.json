@@ -12,8 +12,8 @@
     "typecheck": "tsc --noEmit --incremental false",
     "test:watch": "jest --watch",
     "test": "jest",
-    "format": "prettier -w .",
-    "format:check": "prettier -c .",
+    "format": "prettier -w \"**/*.{js,ts,tsx}\"",
+    "format:check": "prettier -c \"**/*.{js,ts,tsx}\"",
     "gen:manifest": "node scripts/generate-manifest.js",
     "postbuild": "echo 'Build completed - sitemap generation disabled'",
     "prepare": "husky install"

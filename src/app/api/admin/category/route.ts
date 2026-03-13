@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any,no-console */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-import { getAuthInfoFromCookie } from '@/lib/auth';
-import { getConfig } from '@/lib/config';
-import { db } from '@/lib/db';
+import { getAuthInfoFromCookie } from "@/lib/auth";
+import { getConfig } from "@/lib/config";
+import { db } from "@/lib/db";
 
-export const runtime = 'nodejs';
+export const runtime = "nodejs";
 
 // 支持的操作类型
-type Action = 'add' | 'disable' | 'enable' | 'delete' | 'sort';
+type Action = "add" | "disable" | "enable" | "delete" | "sort";
 
 interface BaseBody {
   action?: Action;
@@ -22,125 +22,125 @@ export async function POST(request: NextRequest) {
 
     const authInfo = getAuthInfoFromCookie(request);
     if (!authInfo || !authInfo.username) {
-      return NextResponse.json({ error: '未登录' }, { status: 401 });
+      return NextResponse.json({ error: "未登录" }, { status: 401 });
     }
     const username = authInfo.username;
 
     // 基础校验
-    const ACTIONS: Action[] = ['add', 'disable', 'enable', 'delete', 'sort'];
+    const ACTIONS: Action[] = ["add", "disable", "enable", "delete", "sort"];
     if (!username || !action || !ACTIONS.includes(action)) {
-      return NextResponse.json({ error: '参数格式错误' }, { status: 400 });
+      return NextResponse.json({ error: "参数格式错误" }, { status: 400 });
     }
 
     // 获取配置与存储
     const adminConfig = await getConfig();
 
     // 权限与身份校验
-    if (authInfo.role !== 'owner' && authInfo.role !== 'admin') {
+    if (authInfo.role !== "owner" && authInfo.role !== "admin") {
       return NextResponse.json(
-        { error: '权限不足，无法执行此操作' },
-        { status: 401 }
+        { error: "权限不足，无法执行此操作" },
+        { status: 401 },
       );
     }
 
     switch (action) {
-      case 'add': {
+      case "add": {
         const { name, type, query } = body as {
           name?: string;
-          type?: 'movie' | 'tv';
+          type?: "movie" | "tv";
           query?: string;
         };
         if (!name || !type || !query) {
-          return NextResponse.json({ error: '缺少必要参数' }, { status: 400 });
+          return NextResponse.json({ error: "缺少必要参数" }, { status: 400 });
         }
         // 检查是否已存在相同的查询和类型组合
         if (
           adminConfig.CustomCategories.some(
-            (c) => c.query === query && c.type === type
+            (c) => c.query === query && c.type === type,
           )
         ) {
-          return NextResponse.json({ error: '该分类已存在' }, { status: 400 });
+          return NextResponse.json({ error: "该分类已存在" }, { status: 400 });
         }
         adminConfig.CustomCategories.push({
           name,
           type,
           query,
-          from: 'custom',
+          from: "custom",
           disabled: false,
         });
         break;
       }
-      case 'disable': {
+      case "disable": {
         const { query, type } = body as {
           query?: string;
-          type?: 'movie' | 'tv';
+          type?: "movie" | "tv";
         };
         if (!query || !type)
           return NextResponse.json(
-            { error: '缺少 query 或 type 参数' },
-            { status: 400 }
+            { error: "缺少 query 或 type 参数" },
+            { status: 400 },
           );
         const entry = adminConfig.CustomCategories.find(
-          (c) => c.query === query && c.type === type
+          (c) => c.query === query && c.type === type,
         );
         if (!entry)
-          return NextResponse.json({ error: '分类不存在' }, { status: 404 });
+          return NextResponse.json({ error: "分类不存在" }, { status: 404 });
         entry.disabled = true;
         break;
       }
-      case 'enable': {
+      case "enable": {
         const { query, type } = body as {
           query?: string;
-          type?: 'movie' | 'tv';
+          type?: "movie" | "tv";
         };
         if (!query || !type)
           return NextResponse.json(
-            { error: '缺少 query 或 type 参数' },
-            { status: 400 }
+            { error: "缺少 query 或 type 参数" },
+            { status: 400 },
           );
         const entry = adminConfig.CustomCategories.find(
-          (c) => c.query === query && c.type === type
+          (c) => c.query === query && c.type === type,
         );
         if (!entry)
-          return NextResponse.json({ error: '分类不存在' }, { status: 404 });
+          return NextResponse.json({ error: "分类不存在" }, { status: 404 });
         entry.disabled = false;
         break;
       }
-      case 'delete': {
+      case "delete": {
         const { query, type } = body as {
           query?: string;
-          type?: 'movie' | 'tv';
+          type?: "movie" | "tv";
         };
         if (!query || !type)
           return NextResponse.json(
-            { error: '缺少 query 或 type 参数' },
-            { status: 400 }
+            { error: "缺少 query 或 type 参数" },
+            { status: 400 },
           );
         const idx = adminConfig.CustomCategories.findIndex(
-          (c) => c.query === query && c.type === type
+          (c) => c.query === query && c.type === type,
         );
         if (idx === -1)
-          return NextResponse.json({ error: '分类不存在' }, { status: 404 });
+          return NextResponse.json({ error: "分类不存在" }, { status: 404 });
         const entry = adminConfig.CustomCategories[idx];
-        if (entry.from === 'config') {
+        if (entry.from === "config") {
           return NextResponse.json(
-            { error: '该分类不可删除' },
-            { status: 400 }
+            { error: "该分类不可删除" },
+            { status: 400 },
           );
         }
         adminConfig.CustomCategories.splice(idx, 1);
         break;
       }
-      case 'sort': {
+      case "sort": {
         const { order } = body as { order?: string[] };
         if (!Array.isArray(order)) {
           return NextResponse.json(
-            { error: '排序列表格式错误' },
-            { status: 400 }
+            { error: "排序列表格式错误" },
+            { status: 400 },
           );
         }
         const map = new Map(
-          adminConfig.CustomCategories.map((c) => [`${c.query}:${c.type}`, c])
+          adminConfig.CustomCategories.map((c) => [`${c.query}:${c.type}`, c]),
         );
         const newList: typeof adminConfig.CustomCategories = [];
         order.forEach((key) => {
@@ -158,7 +158,7 @@ export async function POST(request: NextRequest) {
         break;
       }
       default:
-        return NextResponse.json({ error: '未知操作' }, { status: 400 });
+        return NextResponse.json({ error: "未知操作" }, { status: 400 });
     }
 
     // 持久化到存储
@@ -168,18 +168,18 @@ export async function POST(request: NextRequest) {
       { ok: true },
       {
         headers: {
-          'Cache-Control': 'no-store',
+          "Cache-Control": "no-store",
         },
-      }
+      },
     );
   } catch (error) {
-    console.error('分类管理操作失败:', error);
+    console.error("分类管理操作失败:", error);
     return NextResponse.json(
       {
-        error: '分类管理操作失败',
+        error: "分类管理操作失败",
         details: (error as Error).message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
